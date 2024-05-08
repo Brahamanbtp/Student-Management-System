@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Additional custom styles can be placed here if necessary */
+        .overlay {
+            display: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .menu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 300px;
+            background-color: #fff;
+            z-index: 1000;
+            padding: 20px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .menu ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .menu ul li {
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .menu ul li:last-child {
+            border-bottom: none;
+        }
+
+        .menu ul li a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .menu-toggle {
+            cursor: pointer;
+            z-index: 1001;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 font-sans">
+    <div class="overlay" id="overlay"></div>
+    <div class="menu" id="menu">
+        <ul>
+            <li><a href="Admission Section.html">Admission</a></li>
+            <li><a href="Alumni Management.html">Alumni</a></li>
+            <li><a href="Attendence management.html">Attendance</a></li>
+            <li><a href="Canteen Management.html">Canteen</a></li>
+            <li><a href="Event Management.html">Events</a></li>
+            <li><a href="Examination Management.html">Exams</a></li>
+            <li><a href="Faculty Management.html">Faculty</a></li>
+            <li><a href="Grading Section.html">Grading</a></li>
+            <li><a href="Hostel Management.html">Hostel</a></li>
+            <li><a href="Id card & Certificate.html">ID Card & Certificate</a></li>
+            <li><a href="Intership & Placement.html">Internship & Placement</a></li>
+            <li><a href="Library Management.html">Library</a></li>
+            <li><a href="Marksheet Section.html">Marksheet</a></li>
+            <li><a href="Mass SMS System.html">Mass SMS</a></li>
+            <li><a href="Payment Section.html">Payment</a></li>
+            <li><a href="Scholarship Management.html">Scholarship</a></li>
+            <li><a href="Student Fees Management.html">Student Fees</a></li>
+            <li><a href="Time Table Section.html">Time Table</a></li>
+            <li><a href="Transportation Management.html">Transportation</a></li>
+        </ul>
+    </div>
+    <div class="menu-toggle" onclick="toggleMenu()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-800" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd"
+                d="M2 5a1 1 0 0 1 1-1h14a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1z"
+                clip-rule="evenodd" />
+        </svg>
+    </div>
+
+    <header class="bg-gradient-to-r from-blue-800 to-gray-900 text-white py-8">
+        <div class="container mx-auto text-center">
+            <h1 class="text-3xl font-semibold">Student Management System</h1>
+            <p class="mt-4">Latest Information Here</p>
+            <!-- Insert Image/Video Here -->
+            
+        </div>
+    </header>
+    <div>
+        <img height="1000px",font-weight="1000px" src="/images/student-management-software.png" alt="student-management-system">
+    </div>
+
+    <footer class="bg-gradient-to-r from-blue-800 to-gray-900 text-white py-4 fixed bottom-0 left-0 w-full">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2024 Student Management System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMenu() {
+            var overlay = document.getElementById('overlay');
+            var menu = document.getElementById('menu');
+            overlay.style.display = (overlay.style.display == 'block') ? 'none' : 'block';
+            menu.style.display = (menu.style.display == 'block') ? 'none' : 'block';
+        }
+    </script>
+</body>
+
+</html>

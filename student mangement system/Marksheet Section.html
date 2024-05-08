@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Marksheet Section -->
+        <section id="marksheet" class="section">
+            <h2>Marksheet System</h2>
+            <!-- Include marksheet form or table here -->
+            <form id="marksheet-form">
+                <label for="student-id-marksheet">Student ID:</label>
+                <input type="text" id="student-id-marksheet" name="student-id-marksheet" required><br><br>
+                <label for="subject">Subject:</label>
+                <input type="text" id="marks-subject" name="marks-subject" required><br><br>
+                <label for="marks-obtained">Marks Obtained:</label>
+                <input type="text" id="marks-obtained" name="marks-obtained" required><br><br>
+                <label for="total-marks">Total Marks:</label>
+                <input type="text" id="total-marks" name="total-marks" required><br><br>
+                <button type="submit">Submit Marks</button>
+            </form>
+            <!-- Marksheet records table -->
+            <table id="marksheet-table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Subject</th>
+                        <th>Marks Obtained</th>
+                        <th>Total Marks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Marksheet records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Marksheet form submission
+        document.getElementById("marksheet-form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent form submission
+
+                // Get form data
+                var studentId = document.getElementById("student-id-marksheet").value;
+                var subject = document.getElementById("marks-subject").value;
+                var marksObtained = document.getElementById("marks-obtained").value;
+                var totalMarks = document.getElementById("total-marks").value;
+
+                // Create table row with form data
+                var newRow = "<tr><td>" + studentId + "</td><td>" + subject + "</td><td>" + marksObtained + "</td><td>" + totalMarks + "</td></tr>";
+
+                // Append new row to marksheet table body
+                var tableBody = document.querySelector("#marksheet-table tbody");
+                tableBody.innerHTML += newRow;
+
+                // Clear form fields after submission
+                document.getElementById("student-id-marksheet").value = "";
+                document.getElementById("marks-subject").value = "";
+                document.getElementById("marks-obtained").value = "";
+                document.getElementById("total-marks").value = "";
+            });
+    </script>
+</body>
+</html>

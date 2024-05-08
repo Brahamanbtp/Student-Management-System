@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Result Processing Section -->
+        <section id="result-processing" class="section">
+            <h2>Result Processing</h2>
+            <!-- Include result processing form or table here -->
+            <form id="result-processing-form">
+                <label for="student-id-result">Student ID:</label>
+                <input type="text" id="student-id-result" name="student-id-result" placeholder="Enter student ID" required><br><br>
+                <label for="subject">Subject:</label>
+                <input type="text" id="result-subject" name="result-subject" placeholder="Enter subject" required><br><br>
+                <label for="marks-obtained">Marks Obtained:</label>
+                <input type="text" id="marks-obtained" name="marks-obtained" placeholder="Enter marks obtained" required><br><br>
+                <button type="submit">Add Result</button>
+            </form>
+            <!-- Result records table -->
+            <table id="result-table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Subject</th>
+                        <th>Marks Obtained</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Result records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Result processing form submission
+        document.getElementById("result-processing-form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent form submission
+
+                // Get form data
+                var studentId = document.getElementById("student-id-result").value;
+                var subject = document.getElementById("result-subject").value;
+                var marksObtained = document.getElementById("marks-obtained").value;
+
+                // Create table row with form data
+                var newRow = "<tr><td>" + studentId + "</td><td>" + subject + "</td><td>" + marksObtained + "</td></tr>";
+
+                // Append new row to result table body
+                var tableBody = document.querySelector("#result-table tbody");
+                tableBody.innerHTML += newRow;
+
+                // Clear form fields after submission
+                document.getElementById("student-id-result").value = "";
+                document.getElementById("result-subject").value = "";
+                document.getElementById("marks-obtained").value = "";
+            });
+    </script>
+</body>
+</html>

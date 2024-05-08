@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Transportation Management Section -->
+        <section id="transport" class="section">
+            <h2>Transportation Management</h2>
+            <!-- Include transport form or table here -->
+            <form id="transport-form">
+                <label for="student-id-transport">Student ID:</label>
+                <input type="text" id="student-id-transport" name="student-id-transport" required><br><br>
+                <label for="route">Route:</label>
+                <input type="text" id="route" name="route" required><br><br>
+                <label for="vehicle-no">Vehicle No:</label>
+                <input type="text" id="vehicle-no" name="vehicle-no" required><br><br>
+                <button type="submit">Assign Transport</button>
+            </form>
+            <!-- Transport records table -->
+            <table id="transport-table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Route</th>
+                        <th>Vehicle No</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Transport records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Transport form submission
+        document.getElementById("transport-form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent form submission
+
+                // Get form data
+                var studentId = document.getElementById("student-id-transport").value;
+                var route = document.getElementById("route").value;
+                var vehicleNo = document.getElementById("vehicle-no").value;
+
+                // Create table row with form data
+                var newRow = "<tr><td>" + studentId + "</td><td>" + route + "</td><td>" + vehicleNo + "</td></tr>";
+
+                // Append new row to transport table body
+                var tableBody = document.querySelector("#transport-table tbody");
+                tableBody.innerHTML += newRow;
+
+                // Clear form fields after submission
+                document.getElementById("student-id-transport").value = "";
+                document.getElementById("route").value = "";
+                document.getElementById("vehicle-no").value = "";
+            });
+    </script>
+    
+</body>
+</html>
