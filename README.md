@@ -27,11 +27,7 @@ The system includes the following key modules:
 
 ## 🛠 Tech Stack  
 
-🚀 **Frontend:** HTML, CSS, JavaScript (React/Vue/Angular)  
-🚀 **Backend:** Node.js / Django / Spring Boot  
-🚀 **Database:** MySQL / PostgreSQL / MongoDB  
-🚀 **Authentication:** JWT / OAuth2  
-🚀 **Hosting & Deployment:** AWS / Firebase / Docker  
+🚀 **Frontend:** HTML, CSS, JavaScript 
 
 ## 📌 Installation  
 
