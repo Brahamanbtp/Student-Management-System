@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <section id="hostel" class="section">
+            <h2>Hostel Management</h2>
+            <!-- Include hostel management form or table here -->
+            <form id="hostel-form">
+                <label for="student-id-hostel">Student ID:</label>
+                <input type="text" id="student-id-hostel" name="student-id-hostel" required><br><br>
+                <label for="hostel-room">Hostel Room:</label>
+                <input type="text" id="hostel-room" name="hostel-room" required><br><br>
+                <label for="check-in-date">Check-in Date:</label>
+                <input type="date" id="check-in-date" name="check-in-date" required><br><br>
+                <label for="check-out-date">Check-out Date:</label>
+                <input type="date" id="check-out-date" name="check-out-date" required><br><br>
+                <button type="submit">Assign Room</button>
+            </form>
+            <!-- Hostel records table -->
+            <table id="hostel-table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Hostel Room</th>
+                        <th>Check-in Date</th>
+                        <th>Check-out Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Hostel records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Hostel form submission
+        document.getElementById("hostel-form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent form submission
+
+                // Get form data
+                var studentId = document.getElementById("student-id-hostel").value;
+                var hostelRoom = document.getElementById("hostel-room").value;
+                var checkInDate = document.getElementById("check-in-date").value;
+                var checkOutDate = document.getElementById("check-out-date").value;
+
+                // Create table row with form data
+                var newRow = "<tr><td>" + studentId + "</td><td>" + hostelRoom + "</td><td>" + checkInDate + "</td><td>" + checkOutDate + "</td></tr>";
+
+                // Append new row to hostel table body
+                var tableBody = document.querySelector("#hostel-table tbody");
+                tableBody.innerHTML += newRow;
+
+                // Clear form fields after submission
+                document.getElementById("student-id-hostel").value = "";
+                document.getElementById("hostel-room").value = "";
+                document.getElementById("check-in-date").value = "";
+                document.getElementById("check-out-date").value = "";
+            });
+    </script>
+</body>
+</html>
