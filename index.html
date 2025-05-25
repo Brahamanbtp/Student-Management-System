@@ -1,128 +1,200 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Management System</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        /* Additional custom styles can be placed here if necessary */
-        .overlay {
-            display: none;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .menu {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 300px;
-            background-color: #fff;
-            z-index: 1000;
-            padding: 20px;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-        }
-
-        .menu ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .menu ul li {
-            padding: 10px 0;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .menu ul li:last-child {
-            border-bottom: none;
-        }
-
-        .menu ul li a {
-            color: #333;
-            text-decoration: none;
-        }
-
-        .menu-toggle {
-            cursor: pointer;
-            z-index: 1001;
-            position: absolute;
-            top: 20px;
-            left: 20px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Management System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    if (!localStorage.getItem("authenticated") ||
+      Date.now() - localStorage.getItem("loginTime") > 300000) {
+      localStorage.clear();
+      location.href = "Login.html";
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
 
-<body class="bg-gray-100 font-sans">
-    <div class="overlay" id="overlay"></div>
-    <div class="menu" id="menu">
-        <ul>
-            <li><a href="Admission Section.html">Admission</a></li>
-            <li><a href="Alumni Management.html">Alumni</a></li>
-            <li><a href="Attendence management.html">Attendance</a></li>
-            <li><a href="Canteen Management.html">Canteen</a></li>
-            <li><a href="Event Management.html">Events</a></li>
-            <li><a href="Examination Management.html">Exams</a></li>
-            <li><a href="Faculty Management.html">Faculty</a></li>
-            <li><a href="Grading Section.html">Grading</a></li>
-            <li><a href="Hostel Management.html">Hostel</a></li>
-            <li><a href="Id card & Certificate.html">ID Card & Certificate</a></li>
-            <li><a href="Intership & Placement.html">Internship & Placement</a></li>
-            <li><a href="Library Management.html">Library</a></li>
-            <li><a href="Marksheet Section.html">Marksheet</a></li>
-            <li><a href="Mass SMS System.html">Mass SMS</a></li>
-            <li><a href="Payment Section.html">Payment</a></li>
-            <li><a href="Scholarship Management.html">Scholarship</a></li>
-            <li><a href="Student Fees Management.html">Student Fees</a></li>
-            <li><a href="Time Table Section.html">Time Table</a></li>
-            <li><a href="Transportation Management.html">Transportation</a></li>
-        </ul>
-    </div>
-    <div class="menu-toggle" onclick="toggleMenu()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-800" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd"
-                d="M2 5a1 1 0 0 1 1-1h14a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1z"
-                clip-rule="evenodd" />
-        </svg>
-    </div>
+<body class="bg-gray-100 text-gray-800">
+  <button onclick="logout()" class="fixed top-4 right-4 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md transition z-50">
+    Logout
+  </button>
 
-    <header class="bg-gradient-to-r from-blue-800 to-gray-900 text-white py-8">
-        <div class="container mx-auto text-center">
-            <h1 class="text-3xl font-semibold">Student Management System</h1>
-            <p class="mt-4">Latest Information Here</p>
-            <!-- Insert Image/Video Here -->
-            
+  <div class="fixed top-4 left-4 z-40">
+    <button onclick="toggleMenu()">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+  </div>
+
+  <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-30" onclick="toggleMenu()"></div>
+
+  <aside id="menu" class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg transform -translate-x-full transition-transform duration-300 z-40 p-6">
+    <h2 class="text-xl font-semibold mb-4">Navigation</h2>
+    <ul class="space-y-3">
+      <li><a href="Admission Section.html" class="text-blue-700 hover:underline">Admission</a></li>
+      <li><a href="Alumni Management.html">Alumni</a></li>
+      <li><a href="Attendence management.html">Attendance</a></li>
+      <li><a href="Canteen Management.html">Canteen</a></li>
+      <li><a href="Event Management.html">Events</a></li>
+      <li><a href="Examination Management.html">Exams</a></li>
+      <li><a href="Faculty Management.html">Faculty</a></li>
+      <li><a href="Grading Section.html">Grading</a></li>
+      <li><a href="Hostel Management.html">Hostel</a></li>
+      <li><a href="Id card & Certificate.html">ID Card & Certificate</a></li>
+      <li><a href="Intership & Placement.html">Internship & Placement</a></li>
+      <li><a href="Library Management.html">Library</a></li>
+      <li><a href="Marksheet Section.html">Marksheet</a></li>
+      <li><a href="Mass SMS System.html">Mass SMS</a></li>
+      <li><a href="Payment Section.html">Payment</a></li>
+      <li><a href="Scholarship Management.html">Scholarship</a></li>
+      <li><a href="Student Fees Management.html">Student Fees</a></li>
+      <li><a href="Time Table Section.html">Time Table</a></li>
+      <li><a href="Transportation Management.html">Transportation</a></li>
+      <li><button onclick="scrollToStats()" class="w-full text-left text-blue-600 hover:underline">Statistics</button></li>
+    </ul>
+  </aside>
+
+  <header class="bg-gradient-to-r from-indigo-700 to-slate-900 text-white py-10">
+    <div class="max-w-5xl mx-auto text-center px-4">
+      <h1 class="text-4xl font-bold">Student Management System</h1>
+      <p class="mt-3 text-lg text-indigo-100">Your one-stop academic management hub</p>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-10 pb-24">
+    <img src="/images/student-management-software.png" alt="Student Management System Dashboard" loading="lazy" class="w-full h-auto rounded-lg shadow mb-6">
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-3">Welcome to the Student Management Portal</h2>
+      <p class="text-gray-700">Use the navigation menu to explore different modules and manage student-related activities efficiently.</p>
+    </section>
+
+    <!-- Statistics Section -->
+    <section id="statistics" class="bg-white rounded-lg shadow-md p-6 mt-12">
+      <h2 class="text-2xl font-semibold mb-4">Statistics</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div>
+          <h3 class="font-semibold mb-2">Attendance Overview</h3>
+          <canvas id="attendanceChart" height="200"></canvas>
         </div>
-    </header>
-    <div>
-        <img height="1000px",font-weight="1000px" src="/images/student-management-software.png" alt="student-management-system">
-    </div>
-
-    <footer class="bg-gradient-to-r from-blue-800 to-gray-900 text-white py-4 fixed bottom-0 left-0 w-full">
-        <div class="container mx-auto text-center">
-            <p>&copy; 2024 Student Management System. All rights reserved.</p>
+        <div>
+          <h3 class="font-semibold mb-2">Fees Collection</h3>
+          <canvas id="feesChart" height="200"></canvas>
         </div>
-    </footer>
+        <div>
+          <h3 class="font-semibold mb-2">Performance Analysis</h3>
+          <canvas id="performanceChart" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
 
-    <script>
-        function toggleMenu() {
-            var overlay = document.getElementById('overlay');
-            var menu = document.getElementById('menu');
-            overlay.style.display = (overlay.style.display == 'block') ? 'none' : 'block';
-            menu.style.display = (menu.style.display == 'block') ? 'none' : 'block';
+  <footer class="bg-gradient-to-r from-indigo-700 to-slate-900 text-white py-4 text-center fixed bottom-0 w-full">
+    <p>&copy; 2024 Student Management System. All rights reserved.</p>
+  </footer>
+
+  <script>
+    function toggleMenu() {
+      document.getElementById('menu').classList.toggle('-translate-x-full');
+      document.getElementById('overlay').classList.toggle('hidden');
+    }
+
+    function logout() {
+      localStorage.removeItem("authenticated");
+      localStorage.removeItem("loginTime");
+      window.location.href = "Login.html";
+    }
+
+    function scrollToStats() {
+      document.getElementById('statistics').scrollIntoView({ behavior: 'smooth' });
+      toggleMenu();
+    }
+
+    ["click", "mousemove", "keypress", "scroll"].forEach(evt =>
+      document.addEventListener(evt, () =>
+        localStorage.setItem("loginTime", Date.now())
+      )
+    );
+
+    // Simulated real-time data fetch
+    function fetchData(chart, label, endpoint) {
+      setInterval(() => {
+        const newValue = Math.floor(Math.random() * 100);
+        chart.data.datasets[0].data.push(newValue);
+        chart.data.labels.push(new Date().toLocaleTimeString());
+        if (chart.data.labels.length > 10) {
+          chart.data.labels.shift();
+          chart.data.datasets[0].data.shift();
         }
-    </script>
+        chart.update();
+      }, 5000);
+    }
+
+    const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+    const attendanceChart = new Chart(attendanceCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Attendance (%)',
+          data: [],
+          backgroundColor: 'rgba(99, 102, 241, 0.2)',
+          borderColor: 'rgba(99, 102, 241, 1)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true } }
+      }
+    });
+
+    const feesCtx = document.getElementById('feesChart').getContext('2d');
+    const feesChart = new Chart(feesCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Paid', 'Pending'],
+        datasets: [{
+          data: [75, 25],
+          backgroundColor: ['#10B981', '#F59E0B']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(performanceCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Math', 'Science', 'English', 'History', 'Art'],
+        datasets: [{
+          label: 'Average Score',
+          data: [78, 85, 90, 70, 88],
+          backgroundColor: 'rgba(16, 185, 129, 0.6)',
+          borderColor: '#10B981',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true } }
+      }
+    });
+
+    fetchData(attendanceChart, 'Attendance (%)');
+  </script>
 </body>
 
 </html>
