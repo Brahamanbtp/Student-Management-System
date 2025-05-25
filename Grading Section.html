@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Grading Section -->
+        <section id="grading" class="section">
+            <h2>Grading</h2>
+            <!-- Include grading form or table here -->
+            <form id="grading-form">
+                <label for="grade">Grade:</label>
+                <input type="text" id="grade" name="grade" required><br><br>
+                <label for="min-marks">Minimum Marks:</label>
+                <input type="text" id="min-marks" name="min-marks" required><br><br>
+                <label for="max-marks">Maximum Marks:</label>
+                <input type="text" id="max-marks" name="max-marks" required><br><br>
+                <button type="submit">Add Grade</button>
+            </form>
+            <!-- Grading records table -->
+            <table id="grading-table">
+                <thead>
+                    <tr>
+                        <th>Grade</th>
+                        <th>Minimum Marks</th>
+                        <th>Maximum Marks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Grading records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Grading form submission
+        document.getElementById("grading-form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent form submission
+            
+                // Get form data
+                var grade = document.getElementById("grade").value;
+                var minMarks = document.getElementById("min-marks").value;
+                var maxMarks = document.getElementById("max-marks").value;
+                
+                // Create table row with form data
+                var newRow = "<tr><td>" + grade + "</td><td>" + minMarks + "</td><td>" + maxMarks + "</td></tr>";
+                
+                // Append new row to grading table body
+                var tableBody = document.querySelector("#grading-table tbody");
+                tableBody.innerHTML += newRow;
+
+                // Clear form fields after submission
+                document.getElementById("grade").value = "";
+                document.getElementById("max-marks").value = "";
+                document.getElementById("min-marks").value = "";
+            });
+    </script>
+</body>
+</html>
