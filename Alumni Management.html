@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumni Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Alumni Management Section -->
+        <section id="alumni-management" class="section">
+            <h2>Alumni Management</h2>
+            <!-- Alumni form -->
+            <form id="alumni-form">
+                <label for="alumni-name">Name:</label>
+                <input type="text" id="alumni-name" name="alumni-name" placeholder="Enter alumni name" required><br><br>
+                <label for="alumni-batch">Batch:</label>
+                <input type="text" id="alumni-batch" name="alumni-batch" placeholder="Enter alumni batch" required><br><br>
+                <label for="alumni-email">Email:</label>
+                <input type="email" id="alumni-email" name="alumni-email" placeholder="Enter alumni email" required><br><br>
+                <button type="submit">Add Alumni</button>
+            </form>
+            <!-- Validation feedback -->
+            <div id="validation-feedback"></div>
+            <!-- Search -->
+            <input type="text" id="search-input" placeholder="Search...">
+            <!-- Alumni records table -->
+            <table id="alumni-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="0">Name <span class="sort-icon">&darr;</span></th>
+                        <th class="sortable" data-column="1">Batch <span class="sort-icon">&darr;</span></th>
+                        <th class="sortable" data-column="2">Email <span class="sort-icon">&darr;</span></th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Alumni records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Load alumni data from localStorage
+        document.addEventListener('DOMContentLoaded', function () {
+            var alumniData = JSON.parse(localStorage.getItem('alumniData')) || [];
+            renderAlumniRecords(alumniData);
+        });
+
+        // Alumni form submission
+        document.getElementById("alumni-form").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent form submission
+
+            // Get form data
+            var alumniName = document.getElementById("alumni-name").value;
+            var alumniBatch = document.getElementById("alumni-batch").value;
+            var alumniEmail = document.getElementById("alumni-email").value;
+
+            // Client-side validation
+            if (alumniName.trim() === '' || alumniBatch.trim() === '' || alumniEmail.trim() === '') {
+                displayValidationFeedback("Please fill in all fields.");
+                return;
+            }
+
+            // Create table row with form data
+            var newRow = createTableRow(alumniName, alumniBatch, alumniEmail);
+
+            // Append new row to alumni table body
+            var tableBody = document.querySelector("#alumni-table tbody");
+            tableBody.innerHTML += newRow;
+
+            // Save data to localStorage
+            var alumniData = JSON.parse(localStorage.getItem('alumniData')) || [];
+            alumniData.push({ name: alumniName, batch: alumniBatch, email: alumniEmail });
+            localStorage.setItem('alumniData', JSON.stringify(alumniData));
+
+            // Clear form fields after submission
+            document.getElementById("alumni-name").value = "";
+            document.getElementById("alumni-batch").value = "";
+            document.getElementById("alumni-email").value = "";
+        });
+
+        // Function to create a table row
+        function createTableRow(name, batch, email) {
+            return "<tr><td>" + name + "</td><td>" + batch + "</td><td>" + email + "</td><td><button onclick=\"editRow(this)\">Edit</button><button onclick=\"deleteRow(this)\">Delete</button></td></tr>";
+        }
+
+        // Function to render alumni records
+        function renderAlumniRecords(data) {
+            var tableBody = document.querySelector("#alumni-table tbody");
+            tableBody.innerHTML = '';
+            data.forEach(function (alumni) {
+                var newRow = createTableRow(alumni.name, alumni.batch, alumni.email);
+                tableBody.innerHTML += newRow;
+            });
+        }
+
+        // Function to delete a table row
+        function deleteRow(button) {
+            if (confirm("Are you sure you want to delete this alumni record?")) {
+                var row = button.closest('tr');
+                row.parentNode.removeChild(row);
+
+                // Remove data from localStorage
+                var alumniData = JSON.parse(localStorage.getItem('alumniData')) || [];
+                var name = row.cells[0].textContent;
+                var batch = row.cells[1].textContent;
+                var email = row.cells[2].textContent;
+                var newData = alumniData.filter(function (alumni) {
+                    return alumni.name !== name || alumni.batch !== batch || alumni.email !== email;
+                });
+                localStorage.setItem('alumniData', JSON.stringify(newData));
+            }
+        }
+
+        // Function to display validation feedback
+        function displayValidationFeedback(message) {
+            var feedbackDiv = document.getElementById("validation-feedback");
+            feedbackDiv.textContent = message;
+            feedbackDiv.style.color = "red";
+        }
+
+        // Search alumni records
+        document.getElementById("search-input").addEventListener("input", function () {
+            var searchValue = this.value.trim().toLowerCase();
+            var rows = document.querySelectorAll("#alumni-table tbody tr");
+            rows.forEach(function (row) {
+                var name = row.cells[0].textContent.toLowerCase();
+                var batch = row.cells[1].textContent.toLowerCase();
+                var email = row.cells[2].textContent.toLowerCase();
+                if (name.includes(searchValue) || batch.includes(searchValue) || email.includes(searchValue)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
