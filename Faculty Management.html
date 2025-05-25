@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Faculty Management Section -->
+        <section id="faculty-management" class="section">
+            <h2>Faculty Management</h2>
+            <!-- Include faculty form or table here -->
+            <form id="faculty-form">
+                <label for="faculty-id">Faculty ID:</label>
+                <input type="text" id="faculty-id" name="faculty-id" required><br><br>
+                <input type="text" id="faculty-name" name="faculty-name" required><br><br>
+                <label for="department">Department:</label>
+                <input type="text" id="department" name="department" required><br><br>
+                <button type="submit">Add Faculty</button>
+                <label for="faculty-name">Name:</label>
+            </form>
+            <!-- Faculty records table -->
+            <table id="faculty-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Faculty ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Faculty records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Faculty form submission
+        document.getElementById("faculty-form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent form submission
+
+                var facultyId = document.getElementById("faculty-id").value;
+                var facultyName = document.getElementById("faculty-name").value;
+                var department = document.getElementById("department").value;
+                
+                // Create table row with form data
+                var newRow = "<tr><td>" + facultyId + "</td><td>" + facultyName + "</td><td>" + department + "</td></tr>";
+                
+                // Append new row to faculty table body
+                var tableBody = document.querySelector("#faculty-table tbody");
+                tableBody.innerHTML += newRow;
+                
+                // Clear form fields after submission
+                document.getElementById("faculty-id").value = "";
+                document.getElementById("faculty-name").value = "";
+                document.getElementById("department").value = "";
+                // Get form data
+            });
+    </script>
+</body>
+</html>
