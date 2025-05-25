@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Internships and Placement Section -->
+        <section id="internships-placement" class="section">
+            <h2>Internships and Placement</h2>
+            <!-- Include internships and placement form or table here -->
+            <form id="internship-placement-form">
+                <label for="company-name">Company Name:</label>
+                <input type="text" id="company-name" name="company-name" placeholder="Enter company name" required><br><br>
+                <label for="internship-role">Internship Role:</label>
+                <input type="text" id="internship-role" name="internship-role" placeholder="Enter internship role" required><br><br>
+                <label for="placement-role">Placement Role:</label>
+                <input type="text" id="placement-role" name="placement-role" placeholder="Enter placement role" required><br><br>
+                <button type="submit">Add Internship/Placement</button>
+            </form>
+            <!-- Internships and placement records table -->
+            <table id="internship-placement-table">
+                <thead>
+                    <tr>
+                        <th>Company Name</th>
+                        <th>Internship Role</th>
+                        <th>Placement Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Internships and placement records will be populated dynamically here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        // Internships and placement form submission
+        document.getElementById("internship-placement-form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent form submission
+
+                // Get form data
+                var companyName = document.getElementById("company-name").value;
+                var internshipRole = document.getElementById("internship-role").value;
+                var placementRole = document.getElementById("placement-role").value;
+
+                // Create table row with form data
+                var newRow = "<tr><td>" + companyName + "</td><td>" + internshipRole + "</td><td>" + placementRole + "</td></tr>";
+
+                // Append new row to internship and placement table body
+                var tableBody = document.querySelector("#internship-placement-table tbody");
+                tableBody.innerHTML += newRow;
+
+                // Clear form fields after submission
+                document.getElementById("company-name").value = "";
+                document.getElementById("internship-role").value = "";
+                document.getElementById("placement-role").value = "";
+            });
+    </script>
+</body>
+</html>
