@@ -1,144 +1,212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alumni Management</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alumni Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
 
-<body>
-    <div class="container">
-        <!-- Alumni Management Section -->
-        <section id="alumni-management" class="section">
-            <h2>Alumni Management</h2>
-            <!-- Alumni form -->
-            <form id="alumni-form">
-                <label for="alumni-name">Name:</label>
-                <input type="text" id="alumni-name" name="alumni-name" placeholder="Enter alumni name" required><br><br>
-                <label for="alumni-batch">Batch:</label>
-                <input type="text" id="alumni-batch" name="alumni-batch" placeholder="Enter alumni batch" required><br><br>
-                <label for="alumni-email">Email:</label>
-                <input type="email" id="alumni-email" name="alumni-email" placeholder="Enter alumni email" required><br><br>
-                <button type="submit">Add Alumni</button>
-            </form>
-            <!-- Validation feedback -->
-            <div id="validation-feedback"></div>
-            <!-- Search -->
-            <input type="text" id="search-input" placeholder="Search...">
-            <!-- Alumni records table -->
-            <table id="alumni-table">
-                <thead>
-                    <tr>
-                        <th class="sortable" data-column="0">Name <span class="sort-icon">&darr;</span></th>
-                        <th class="sortable" data-column="1">Batch <span class="sort-icon">&darr;</span></th>
-                        <th class="sortable" data-column="2">Email <span class="sort-icon">&darr;</span></th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Alumni records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Alumni Management</h2>
+    <form id="alumni-form" class="space-y-4">
+      <div>
+        <label for="alumni-name" class="block text-sm font-medium text-gray-700">Name</label>
+        <input type="text" id="alumni-name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+      </div>
+      <div>
+        <label for="alumni-batch" class="block text-sm font-medium text-gray-700">Batch</label>
+        <input type="text" id="alumni-batch" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+      </div>
+      <div>
+        <label for="alumni-email" class="block text-sm font-medium text-gray-700">Email</label>
+        <input type="email" id="alumni-email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+      </div>
+      <div>
+        <label for="alumni-company" class="block text-sm font-medium text-gray-700">Current Company</label>
+        <input type="text" id="alumni-company" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+      </div>
+      <div>
+        <label for="alumni-photo" class="block text-sm font-medium text-gray-700">Profile Picture (URL)</label>
+        <input type="url" id="alumni-photo" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+      </div>
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Add Alumni</button>
+    </form>
+
+    <div class="mt-8">
+      <input type="text" id="search-input" placeholder="Search..." class="w-full p-2 border border-gray-300 rounded mb-4" />
+      <div class="overflow-x-auto">
+        <table id="alumni-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="px-4 py-2 text-left">#</th>
+              <th class="px-4 py-2 text-left">Photo</th>
+              <th class="px-4 py-2 text-left">Name</th>
+              <th class="px-4 py-2 text-left">Batch</th>
+              <th class="px-4 py-2 text-left">Email</th>
+              <th class="px-4 py-2 text-left">Company</th>
+              <th class="px-4 py-2 text-left">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex justify-between items-center">
+        <div class="flex gap-2">
+          <button onclick="clearAllRecords()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Clear All</button>
+          <button onclick="exportToCSV()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Export CSV</button>
+          <button onclick="exportToPDF()" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Export PDF</button>
+        </div>
+        <div id="pagination" class="flex gap-2"></div>
+      </div>
     </div>
-    <script>
-        // Load alumni data from localStorage
-        document.addEventListener('DOMContentLoaded', function () {
-            var alumniData = JSON.parse(localStorage.getItem('alumniData')) || [];
-            renderAlumniRecords(alumniData);
-        });
+  </div>
 
-        // Alumni form submission
-        document.getElementById("alumni-form").addEventListener("submit", function (event) {
-            event.preventDefault(); // Prevent form submission
+  <script>
+    const form = document.getElementById("alumni-form");
+    const tableBody = document.querySelector("#alumni-table tbody");
+    const searchInput = document.getElementById("search-input");
+    const pagination = document.getElementById("pagination");
+    let alumni = JSON.parse(localStorage.getItem("alumniData")) || [];
+    let currentPage = 1;
+    const pageSize = 5;
 
-            // Get form data
-            var alumniName = document.getElementById("alumni-name").value;
-            var alumniBatch = document.getElementById("alumni-batch").value;
-            var alumniEmail = document.getElementById("alumni-email").value;
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const name = document.getElementById("alumni-name").value.trim();
+      const batch = document.getElementById("alumni-batch").value.trim();
+      const email = document.getElementById("alumni-email").value.trim();
+      const company = document.getElementById("alumni-company").value.trim();
+      const photo = document.getElementById("alumni-photo").value.trim();
+      if (!name || !batch || !email) return alert("Please fill required fields.");
+      alumni.push({ name, batch, email, company, photo });
+      localStorage.setItem("alumniData", JSON.stringify(alumni));
+      currentPage = Math.ceil(alumni.length / pageSize);
+      renderTable();
+      form.reset();
+    });
 
-            // Client-side validation
-            if (alumniName.trim() === '' || alumniBatch.trim() === '' || alumniEmail.trim() === '') {
-                displayValidationFeedback("Please fill in all fields.");
-                return;
-            }
+    function renderTable() {
+      const start = (currentPage - 1) * pageSize;
+      const paginatedData = alumni.slice(start, start + pageSize);
+      tableBody.innerHTML = "";
+      paginatedData.forEach((record, index) => {
+        const row = `<tr>
+          <td class="px-4 py-2">${start + index + 1}</td>
+          <td class="px-4 py-2"><img src="${record.photo || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full" alt="profile"></td>
+          <td class="px-4 py-2">${record.name}</td>
+          <td class="px-4 py-2">${record.batch}</td>
+          <td class="px-4 py-2">${record.email}</td>
+          <td class="px-4 py-2">${record.company || ''}</td>
+          <td class="px-4 py-2 space-x-2">
+            <button onclick="editRecord(${start + index})" class="text-blue-600 hover:underline">Edit</button>
+            <button onclick="deleteRecord(${start + index})" class="text-red-600 hover:underline">Delete</button>
+          </td>
+        </tr>`;
+        tableBody.insertAdjacentHTML("beforeend", row);
+      });
+      renderPagination();
+    }
 
-            // Create table row with form data
-            var newRow = createTableRow(alumniName, alumniBatch, alumniEmail);
+    function renderPagination() {
+      pagination.innerHTML = "";
+      const totalPages = Math.ceil(alumni.length / pageSize);
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        btn.className = `px-3 py-1 border rounded ${currentPage === i ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 border-indigo-600'} hover:bg-indigo-700 hover:text-white`;
+        btn.onclick = () => { currentPage = i; renderTable(); };
+        pagination.appendChild(btn);
+      }
+    }
 
-            // Append new row to alumni table body
-            var tableBody = document.querySelector("#alumni-table tbody");
-            tableBody.innerHTML += newRow;
+    function editRecord(index) {
+      const record = alumni[index];
+      const name = prompt("Edit Name:", record.name);
+      const batch = prompt("Edit Batch:", record.batch);
+      const email = prompt("Edit Email:", record.email);
+      const company = prompt("Edit Company:", record.company);
+      const photo = prompt("Edit Photo URL:", record.photo);
+      if (name && batch && email) {
+        alumni[index] = { name, batch, email, company, photo };
+        localStorage.setItem("alumniData", JSON.stringify(alumni));
+        renderTable();
+      }
+    }
 
-            // Save data to localStorage
-            var alumniData = JSON.parse(localStorage.getItem('alumniData')) || [];
-            alumniData.push({ name: alumniName, batch: alumniBatch, email: alumniEmail });
-            localStorage.setItem('alumniData', JSON.stringify(alumniData));
+    function deleteRecord(index) {
+      if (confirm("Are you sure to delete this record?")) {
+        alumni.splice(index, 1);
+        localStorage.setItem("alumniData", JSON.stringify(alumni));
+        if (currentPage > Math.ceil(alumni.length / pageSize)) currentPage--;
+        renderTable();
+      }
+    }
 
-            // Clear form fields after submission
-            document.getElementById("alumni-name").value = "";
-            document.getElementById("alumni-batch").value = "";
-            document.getElementById("alumni-email").value = "";
-        });
+    function clearAllRecords() {
+      if (confirm("Clear all records?")) {
+        alumni = [];
+        localStorage.removeItem("alumniData");
+        renderTable();
+      }
+    }
 
-        // Function to create a table row
-        function createTableRow(name, batch, email) {
-            return "<tr><td>" + name + "</td><td>" + batch + "</td><td>" + email + "</td><td><button onclick=\"editRow(this)\">Edit</button><button onclick=\"deleteRow(this)\">Delete</button></td></tr>";
-        }
+    function exportToCSV() {
+      let csv = "Name,Batch,Email,Company,Photo\n" + alumni.map(a => `${a.name},${a.batch},${a.email},${a.company},${a.photo}`).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'alumni_data.csv';
+      link.click();
+    }
 
-        // Function to render alumni records
-        function renderAlumniRecords(data) {
-            var tableBody = document.querySelector("#alumni-table tbody");
-            tableBody.innerHTML = '';
-            data.forEach(function (alumni) {
-                var newRow = createTableRow(alumni.name, alumni.batch, alumni.email);
-                tableBody.innerHTML += newRow;
-            });
-        }
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 10;
+      doc.text("Alumni Records", 10, y);
+      y += 10;
+      alumni.forEach((a, i) => {
+        doc.text(`${i + 1}. ${a.name} | ${a.batch} | ${a.email} | ${a.company}`, 10, y);
+        y += 10;
+      });
+      doc.save("alumni_data.pdf");
+    }
 
-        // Function to delete a table row
-        function deleteRow(button) {
-            if (confirm("Are you sure you want to delete this alumni record?")) {
-                var row = button.closest('tr');
-                row.parentNode.removeChild(row);
+    searchInput.addEventListener("input", function () {
+      const term = this.value.toLowerCase().trim();
+      const filtered = alumni.filter(a => a.name.toLowerCase().includes(term) || a.batch.toLowerCase().includes(term) || a.email.toLowerCase().includes(term) || a.company.toLowerCase().includes(term));
+      tableBody.innerHTML = "";
+      filtered.forEach((record, index) => {
+        const row = `<tr>
+          <td class="px-4 py-2">${index + 1}</td>
+          <td class="px-4 py-2"><img src="${record.photo || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full" alt="profile"></td>
+          <td class="px-4 py-2">${record.name}</td>
+          <td class="px-4 py-2">${record.batch}</td>
+          <td class="px-4 py-2">${record.email}</td>
+          <td class="px-4 py-2">${record.company || ''}</td>
+          <td class="px-4 py-2 space-x-2">
+            <button onclick="editRecord(${index})" class="text-blue-600 hover:underline">Edit</button>
+            <button onclick="deleteRecord(${index})" class="text-red-600 hover:underline">Delete</button>
+          </td>
+        </tr>`;
+        tableBody.insertAdjacentHTML("beforeend", row);
+      });
+      pagination.innerHTML = "";
+    });
 
-                // Remove data from localStorage
-                var alumniData = JSON.parse(localStorage.getItem('alumniData')) || [];
-                var name = row.cells[0].textContent;
-                var batch = row.cells[1].textContent;
-                var email = row.cells[2].textContent;
-                var newData = alumniData.filter(function (alumni) {
-                    return alumni.name !== name || alumni.batch !== batch || alumni.email !== email;
-                });
-                localStorage.setItem('alumniData', JSON.stringify(newData));
-            }
-        }
-
-        // Function to display validation feedback
-        function displayValidationFeedback(message) {
-            var feedbackDiv = document.getElementById("validation-feedback");
-            feedbackDiv.textContent = message;
-            feedbackDiv.style.color = "red";
-        }
-
-        // Search alumni records
-        document.getElementById("search-input").addEventListener("input", function () {
-            var searchValue = this.value.trim().toLowerCase();
-            var rows = document.querySelectorAll("#alumni-table tbody tr");
-            rows.forEach(function (row) {
-                var name = row.cells[0].textContent.toLowerCase();
-                var batch = row.cells[1].textContent.toLowerCase();
-                var email = row.cells[2].textContent.toLowerCase();
-                if (name.includes(searchValue) || batch.includes(searchValue) || email.includes(searchValue)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            });
-        });
-    </script>
+    document.addEventListener("DOMContentLoaded", renderTable);
+  </script>
 </body>
 
 </html>
