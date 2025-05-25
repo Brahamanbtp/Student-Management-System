@@ -1,141 +1,165 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admission Section</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admission Section</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
 
-<body>
-    <div class="container">
-        <!-- Admission Section -->
-        <section id="admission" class="section">
-            <h2>Admission</h2>
-            <!-- Admission form -->
-            <form id="admission-form">
-                <label for="student-name">Student Name:</label>
-                <input type="text" id="student-name" name="student-name" required><br><br>
-                <label for="admission-type">Admission Type:</label>
-                <select id="admission-type" name="admission-type" required>
-                    <option value="online">Online</option>
-                    <option value="offline">Offline</option>
-                </select><br><br>
-                <button type="submit">Submit Admission</button>
-            </form>
-            <!-- Search -->
-            <input type="text" id="search-input" placeholder="Search...">
-            <!-- Admission records table -->
-            <table id="admission-table">
-                <thead>
-                    <tr>
-                        <th>Student Name</th>
-                        <th>Admission Type</th>
-                        <th>Action</th> <!-- Added column for edit/delete actions -->
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Admission records will be populated dynamically here -->
-                </tbody>
-            </table>
-            <!-- Pagination -->
-            <div id="pagination"></div>
-        </section>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Admission Section</h2>
+    <form id="admission-form" class="space-y-4">
+      <div>
+        <label for="student-name" class="block text-sm font-medium text-gray-700">Student Name</label>
+        <input type="text" id="student-name" name="student-name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+      </div>
+      <div>
+        <label for="admission-type" class="block text-sm font-medium text-gray-700">Admission Type</label>
+        <select id="admission-type" name="admission-type" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+        </select>
+      </div>
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">Submit Admission</button>
+    </form>
+
+    <div class="mt-8">
+      <input type="text" id="search-input" placeholder="Search..." class="w-full p-2 border border-gray-300 rounded mb-4" />
+      <div class="overflow-x-auto">
+        <table id="admission-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="px-4 py-2 text-left">#</th>
+              <th class="px-4 py-2 text-left">Student Name</th>
+              <th class="px-4 py-2 text-left">Admission Type</th>
+              <th class="px-4 py-2 text-left">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <!-- Records inserted dynamically -->
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex justify-between items-center">
+        <button onclick="clearAllRecords()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Clear All</button>
+        <div id="pagination" class="flex gap-2"></div>
+      </div>
     </div>
-    <script>
-        // Admission form submission
-        document.getElementById("admission-form").addEventListener("submit", function (event) {
-            event.preventDefault(); // Prevent form submission
+  </div>
 
-            // Get form data
-            var studentName = document.getElementById("student-name").value;
-            var admissionType = document.getElementById("admission-type").value;
+  <script>
+    const form = document.getElementById("admission-form");
+    const tableBody = document.querySelector("#admission-table tbody");
+    const searchInput = document.getElementById("search-input");
+    const pagination = document.getElementById("pagination");
+    let admissions = [];
+    let currentPage = 1;
+    const pageSize = 5;
+    let filteredIndexes = null;
 
-            // Client-side validation
-            if (studentName.trim() === '') {
-                alert("Please enter student name.");
-                return;
-            }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const name = document.getElementById("student-name").value.trim();
+      const type = document.getElementById("admission-type").value;
+      if (!name) return alert("Please enter student name.");
+      admissions.push({ name, type });
+      currentPage = Math.ceil(admissions.length / pageSize);
+      renderTable();
+      form.reset();
+    });
 
-            // Create table row with form data
-            var newRow = "<tr><td>" + studentName + "</td><td>" + admissionType + "</td><td><button class='edit-btn'>Edit</button><button class='delete-btn'>Delete</button></td></tr>";
+    function renderTable(data = admissions) {
+      const start = (currentPage - 1) * pageSize;
+      const paginatedData = data.slice(start, start + pageSize);
+      tableBody.innerHTML = "";
 
-            // Append new row to admission table body
-            var tableBody = document.querySelector("#admission-table tbody");
-            tableBody.innerHTML += newRow;
+      paginatedData.forEach((record, index) => {
+        const globalIndex = admissions.indexOf(record);
+        const row = `<tr>
+          <td class="px-4 py-2">${start + index + 1}</td>
+          <td class="px-4 py-2">${record.name}</td>
+          <td class="px-4 py-2">${record.type}</td>
+          <td class="px-4 py-2 space-x-2">
+            <button onclick="editRecord(${globalIndex})" class="text-blue-600 hover:underline">Edit</button>
+            <button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>
+          </td>
+        </tr>`;
+        tableBody.insertAdjacentHTML("beforeend", row);
+      });
 
-            // Clear form fields after submission
-            document.getElementById("student-name").value = "";
-            document.getElementById("admission-type").value = "online"; // Default value to online
+      if (data === admissions) {
+        filteredIndexes = null;
+        renderPagination();
+      } else {
+        filteredIndexes = data.map(d => admissions.indexOf(d));
+        pagination.innerHTML = "";
+      }
+    }
 
-            // Feedback message for successful submission
-            alert("Admission submitted successfully!");
-        });
+    function editRecord(index) {
+      const record = admissions[index];
+      const newName = prompt("Edit Student Name:", record.name);
+      const newType = prompt("Edit Admission Type (online/offline):", record.type);
+      if (newName && newType) {
+        admissions[index] = { name: newName.trim(), type: newType.trim().toLowerCase() };
+        renderTable(filteredIndexes ? filteredIndexes.map(i => admissions[i]) : admissions);
+        alert("Record updated successfully!");
+      }
+    }
 
-        // Edit admission record
-        document.querySelector("#admission-table").addEventListener("click", function (event) {
-            if (event.target.classList.contains("edit-btn")) {
-                var row = event.target.parentNode.parentNode;
-                var studentName = row.cells[0].textContent;
-                var admissionType = row.cells[1].textContent;
-                var newStudentName = prompt("Edit Student Name:", studentName);
-                var newAdmissionType = prompt("Edit Admission Type:", admissionType);
-                if (newStudentName && newAdmissionType) {
-                    row.cells[0].textContent = newStudentName;
-                    row.cells[1].textContent = newAdmissionType;
-                    alert("Admission record updated successfully!");
-                }
-            }
-        });
+    function deleteRecord(index) {
+      if (confirm("Are you sure you want to delete this record?")) {
+        admissions.splice(index, 1);
+        if (currentPage > Math.ceil(admissions.length / pageSize)) currentPage--;
+        renderTable(filteredIndexes ? filteredIndexes.map(i => admissions[i]) : admissions);
+        alert("Record deleted successfully!");
+      }
+    }
 
-        // Delete admission record
-        document.querySelector("#admission-table").addEventListener("click", function (event) {
-            if (event.target.classList.contains("delete-btn")) {
-                var row = event.target.parentNode.parentNode;
-                row.parentNode.removeChild(row);
-                alert("Admission record deleted successfully!");
-            }
-        });
+    function clearAllRecords() {
+      if (confirm("Are you sure you want to delete all records?")) {
+        admissions = [];
+        currentPage = 1;
+        renderTable();
+        alert("All records have been cleared.");
+      }
+    }
 
-        // Search admission records
-        document.getElementById("search-input").addEventListener("input", function () {
-            var searchValue = this.value.trim().toLowerCase();
-            var rows = document.querySelectorAll("#admission-table tbody tr");
-            rows.forEach(function (row) {
-                var studentName = row.cells[0].textContent.toLowerCase();
-                var admissionType = row.cells[1].textContent.toLowerCase();
-                if (studentName.includes(searchValue) || admissionType.includes(searchValue)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            });
-        });
+    searchInput.addEventListener("input", function () {
+      const term = this.value.toLowerCase().trim();
+      if (term === "") {
+        renderTable(admissions);
+      } else {
+        const filtered = admissions.filter(r => r.name.toLowerCase().includes(term) || r.type.toLowerCase().includes(term));
+        currentPage = 1;
+        renderTable(filtered);
+      }
+    });
 
-        // Pagination (for demonstration purposes)
-        var pagination = document.getElementById("pagination");
-        var pageSize = 5;
-        var tableRows = document.querySelectorAll("#admission-table tbody tr");
-        var pageCount = Math.ceil(tableRows.length / pageSize);
-        for (var i = 1; i <= pageCount; i++) {
-            var pageButton = document.createElement("button");
-            pageButton.textContent = i;
-            pageButton.addEventListener("click", function () {
-                var pageNumber = parseInt(this.textContent);
-                var start = (pageNumber - 1) * pageSize;
-                var end = start + pageSize;
-                tableRows.forEach(function (row, index) {
-                    if (index >= start && index < end) {
-                        row.style.display = "";
-                    } else {
-                        row.style.display = "none";
-                    }
-                });
-            });
-            pagination.appendChild(pageButton);
-        }
-    </script>
+    function renderPagination() {
+      pagination.innerHTML = "";
+      const totalPages = Math.ceil(admissions.length / pageSize);
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        btn.className = `px-3 py-1 border rounded ${currentPage === i ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 border-indigo-600'} hover:bg-indigo-700 hover:text-white`;
+        btn.onclick = () => {
+          currentPage = i;
+          renderTable();
+        };
+        pagination.appendChild(btn);
+      }
+    }
+  </script>
 </body>
 
 </html>
