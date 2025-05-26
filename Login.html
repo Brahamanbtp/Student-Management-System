@@ -1,306 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<title>Animated Glassmorphism Login Page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Poppins", sans-serif;
-        }
+  <meta charset="UTF-8" />
+  <title>Login | Student Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* Existing CSS remains unchanged - your animations and styles */
+    * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
 
-        section {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-        }
+section {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
 
-        section .bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            pointer-events: none;
-        }
+section .bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
 
-        section .trees {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 100;
-            pointer-events: none;
-        }
+section .trees {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 100;
+  pointer-events: none;
+}
 
-        section .girl {
-            position: absolute;
-            scale: 0.65;
-            pointer-events: none;
-            animation: animateGirl 10s linear infinite;
-        }
+section .girl {
+  position: absolute;
+  scale: 0.65;
+  pointer-events: none;
+  animation: animateGirl 10s linear infinite;
+}
 
-        @keyframes animateGirl {
-            0% {
-                transform: translateX(calc(100% + 100vw));
-            }
-            50% {
-                transform: translateX(calc(-100% - 100vw));
-            }
-            50.01% {
-                transform: translateX(calc(-100% - 100vw)) rotateY(180deg);
-            }
-            100% {
-                transform: translateX(calc(100% + 100vw)) rotateY(180deg);
-            }
-        }
+@keyframes animateGirl {
+  0% {
+    transform: translateX(calc(100% + 100vw));
+  }
+  50% {
+    transform: translateX(calc(-100% - 100vw));
+  }
+  50.01% {
+    transform: translateX(calc(-100% - 100vw)) rotateY(180deg);
+  }
+  100% {
+    transform: translateX(calc(100% + 100vw)) rotateY(180deg);
+  }
+}
 
-        .login {
-            position: relative;
-            padding: 60px;
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(15px);
-            border: 1px solid #fff;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-            border-right: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 20px;
-            width: 500px;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
-        }
+.login {
+  position: relative;
+  padding: 60px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(15px);
+  border: 1px solid #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+}
 
-        .login h2 {
-            position: relative;
-            width: 100%;
-            text-align: center;
-            font-size: 2.5em;
-            font-weight: 600;
-            color: #8f2c24;
-            margin-bottom: 10px;
-        }
+.login h2 {
+  position: relative;
+  width: 100%;
+  text-align: center;
+  font-size: 2.5em;
+  font-weight: 600;
+  color: #8f2c24;
+  margin-bottom: 10px;
+}
 
-        .login .inputBox {
-            position: relative;
-        }
+.login .inputBox {
+  position: relative;
+}
 
-        .login .inputBox input {
-            position: relative;
-            width: 100%;
-            padding: 15px 20px;
-            outline: none;
-            font-size: 1.25em;
-            color: #8f2c24;
-            border-radius: 5px;
-            background: #fff;
-            border: none;
-            margin-bottom: 30px;
-        }
+.login .inputBox input {
+  position: relative;
+  width: 100%;
+  padding: 15px 20px;
+  outline: none;
+  font-size: 1.25em;
+  color: #8f2c24;
+  border-radius: 5px;
+  background: #fff;
+  border: none;
+  margin-bottom: 30px;
+}
 
-        .login .inputBox ::placeholder {
-            color: #8f2c24;
-        }
+.login .inputBox ::placeholder {
+  color: #8f2c24;
+}
 
-        .login .inputBox #btn {
-            position: relative;
-            border: none;
-            outline: none;
-            background: #8f2c24;
-            color: #fff;
-            cursor: pointer;
-            font-size: 1.25em;
-            font-weight: 500;
-            transition: 0.5s;
-        }
+.login .inputBox #btn {
+  position: relative;
+  border: none;
+  outline: none;
+  background: #8f2c24;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.25em;
+  font-weight: 500;
+  transition: 0.5s;
+}
 
-        .login .inputBox #btn:hover {
-            background: #d64c42;
-        }
+.login .inputBox #btn:hover {
+  background: #d64c42;
+}
 
-        .login .group {
-            display: flex;
-            justify-content: space-between;
-        }
+.login .group {
+  display: flex;
+  justify-content: space-between;
+}
 
-        .login .group a {
-            font-size: 1.25em;
-            color: #8f2c24;
-            font-weight: 500;
-            text-decoration: none;
-        }
+.login .group a {
+  font-size: 1.25em;
+  color: #8f2c24;
+  font-weight: 500;
+  text-decoration: none;
+}
 
-        .login .group a:nth-child(2) {
-            text-decoration: underline;
-        }
+.login .group a:nth-child(2) {
+  text-decoration: underline;
+}
 
-        .leaves {
-            position: absolute;
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1;
-            pointer-events: none;
-        }
+.leaves {
+  position: absolute;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  pointer-events: none;
+}
 
-        .leaves .set {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-        }
+.leaves .set {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
 
-        .leaves .set div {
-            position: absolute;
-            display: block;
-        }
+.leaves .set div {
+  position: absolute;
+  display: block;
+}
 
-        .leaves .set div:nth-child(1) {
-            left: 20%;
-            animation: animate 20s linear infinite;
-        }
+.leaves .set div:nth-child(1) {
+  left: 20%;
+  animation: animate 20s linear infinite;
+}
 
-        .leaves .set div:nth-child(2) {
-            left: 50%;
-            animation: animate 14s linear infinite;
-        }
+.leaves .set div:nth-child(2) {
+  left: 50%;
+  animation: animate 14s linear infinite;
+}
 
-        .leaves .set div:nth-child(3) {
-            left: 70%;
-            animation: animate 12s linear infinite;
-        }
+.leaves .set div:nth-child(3) {
+  left: 70%;
+  animation: animate 12s linear infinite;
+}
 
-        .leaves .set div:nth-child(4) {
-            left: 5%;
-            animation: animate 15s linear infinite;
-        }
+.leaves .set div:nth-child(4) {
+  left: 5%;
+  animation: animate 15s linear infinite;
+}
 
-        .leaves .set div:nth-child(5) {
-            left: 85%;
-            animation: animate 18s linear infinite;
-        }
+.leaves .set div:nth-child(5) {
+  left: 85%;
+  animation: animate 18s linear infinite;
+}
 
-        .leaves .set div:nth-child(6) {
-            left: 90%;
-            animation: animate 12s linear infinite;
-        }
+.leaves .set div:nth-child(6) {
+  left: 90%;
+  animation: animate 12s linear infinite;
+}
 
-        .leaves .set div:nth-child(7) {
-            left: 15%;
-            animation: animate 14s linear infinite;
-        }
+.leaves .set div:nth-child(7) {
+  left: 15%;
+  animation: animate 14s linear infinite;
+}
 
-        .leaves .set div:nth-child(8) {
-            left: 60%;
-            animation: animate 15s linear infinite;
-        }
+.leaves .set div:nth-child(8) {
+  left: 60%;
+  animation: animate 15s linear infinite;
+}
 
-        @keyframes animate {
-            0% {
-                opacity: 0;
-                top: -10%;
-                transform: translateX(20px) rotate(0deg);
-            }
-            10% {
-                opacity: 1;
-            }
-            20% {
-                transform: translateX(-20px) rotate(45deg);
-            }
-            40% {
-                transform: translateX(-20px) rotate(90deg);
-            }
-            60% {
-                transform: translateX(20px) rotate(180deg);
-            }
-            80% {
-                transform: translateX(-20px) rotate(45deg);
-            }
-            100% {
-                top: 110%;
-                transform: translateX(20px) rotate(225deg);
-            }
-        }
-    </style>
+@keyframes animate {
+  0% {
+    opacity: 0;
+    top: -10%;
+    transform: translateX(20px) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  20% {
+    transform: translateX(-20px) rotate(45deg);
+  }
+  40% {
+    transform: translateX(-20px) rotate(90deg);
+  }
+  60% {
+    transform: translateX(20px) rotate(180deg);
+  }
+  80% {
+    transform: translateX(-20px) rotate(45deg);
+  }
+  100% {
+    top: 110%;
+    transform: translateX(20px) rotate(225deg);
+  }
+}
+
+  </style>
 </head>
+
 <body>
-	<section>
-		<div class="leaves">
-			<div class="set">
-				<div><img src="/images/leaf_01.png"></div>
-				<div><img src="/images/leaf_02.png"></div>
-				<div><img src="/images/leaf_03.png"></div>
-				<div><img src="/images/leaf_04.png"></div>
-				<div><img src="/images/leaf_01.png"></div>
-				<div><img src="/images/leaf_02.png"></div>
-				<div><img src="/images/leaf_03.png"></div>
-				<div><img src="/images/leaf_04.png"></div>
-			</div>
-		</div>
-		<img src="/images/bg.jpg" class="bg">
-		<img src="/images/girl.png" class="girl">
-		<img src="/images/trees.png" class="trees">
-		<div class="login">
-			<h2>Sign In</h2>
-			<div class="inputBox">
-				<input type="text" id="username" placeholder="Username">
-			</div>
-			<div class="inputBox">
-				<input type="password" id="password" placeholder="Password">
-			</div>
-			<div class="inputBox">
-				<input type="submit" value="Login" id="btn">
-			</div>
-			<div class="group">
-				<a href="#">Forget Password</a>
-				<a href="./Signup.html">Signup</a>
-			</div>
-		</div>
-	</section>
-    <script>
-        document.getElementById('btn').addEventListener('click', function() {
-            var username = document.getElementById('username').value.trim();
-            var password = document.getElementById('password').value.trim();
+  <section>
+    <div class="leaves">
+      <div class="set">
+        <div><img src="/images/leaf_01.png" /></div>
+        <div><img src="/images/leaf_02.png" /></div>
+        <div><img src="/images/leaf_03.png" /></div>
+        <div><img src="/images/leaf_04.png" /></div>
+        <div><img src="/images/leaf_01.png" /></div>
+        <div><img src="/images/leaf_02.png" /></div>
+        <div><img src="/images/leaf_03.png" /></div>
+        <div><img src="/images/leaf_04.png" /></div>
+      </div>
+    </div>
 
-            // Get stored credentials from localStorage
-            var storedUsers = JSON.parse(localStorage.getItem('users')) || {};
+    <img src="/images/bg.jpg" class="bg" />
+    <img src="/images/girl.png" class="girl" />
+    <img src="/images/trees.png" class="trees" />
 
-            // Check if the entered username exists and matches the password
-            if (storedUsers[username] && storedUsers[username] === password) {
-                localStorage.setItem("authenticated", "true");
-                localStorage.setItem("loginTime", Date.now());
+    <div class="login">
+      <h2 id="loginTitle">Sign In</h2>
+      <div class="inputBox">
+        <input type="text" id="username" placeholder="Username" />
+      </div>
+      <div class="inputBox">
+        <input type="password" id="password" placeholder="Password" />
+      </div>
+      <div class="inputBox">
+        <input type="submit" value="Login" id="btn" />
+      </div>
+      <div class="group">
+        <a href="#">Forget Password</a>
+        <a href="./Signup.html">Signup</a>
+      </div>
+    </div>
+  </section>
 
-                // Redirect to home page
-                window.location.href = 'index.html';
-            } else {
-                alert('Invalid username or password!');
-            }
-        });
+  <script>
+  document.getElementById("btn").addEventListener("click", function () {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
 
-        // Check for timeout
-        setInterval(() => {
-            const loginTime = localStorage.getItem("loginTime");
-            if (loginTime && Date.now() - loginTime > 5 * 60 * 1000) {
-                localStorage.removeItem("authenticated");
-                localStorage.removeItem("loginTime");
-                window.location.href = "Login.html";
-            }
-        }, 60000); // Check every 60 seconds
-    </script>
+    if (!username || !password) {
+      alert("Please enter both username and password.");
+      return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+
+    if (!users[username]) {
+      alert("Invalid username or password.");
+      return;
+    }
+
+    if (users[username].password !== password) {
+      alert("Invalid username or password.");
+      return;
+    }
+
+    // ✅ Success: User is valid
+    const loggedInUser = users[username];
+    alert(`Welcome back, ${loggedInUser.fullName}!`);
+
+    // ✅ Store login session info
+    localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
+    localStorage.setItem("authenticated", "true");
+    localStorage.setItem("userRole", loggedInUser.role); // Make sure this exists in registration
+
+    // ✅ Redirect to dashboard
+    window.location.href = "dashboard.html";
+  });
+</script>
+
+
 </body>
 </html>
