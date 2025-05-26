@@ -1,63 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Event Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #3949ab;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 10px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+    }
+
+    button {
+      background-color: #3949ab;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #303f9f;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e8eaf6;
+      color: #333;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .role-message {
+      font-size: 1rem;
+      margin-bottom: 20px;
+      color: #444;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Event Management Section -->
-        <section id="events" class="section">
-            <h2>Event Management</h2>
-            <!-- Include event form here -->
-            <form id="event-form">
-                <label for="event-name">Event Name:</label>
-                <input type="text" id="event-name" name="event-name" placeholder="Enter event name" required><br><br>
-                <label for="event-date">Event Date:</label>
-                <input type="date" id="event-date" name="event-date" required><br><br>
-                <label for="event-description">Description:</label><br>
-                <textarea id="event-description" name="event-description" rows="4" placeholder="Enter event description" required></textarea><br><br>
-                <button type="submit">Add Event</button>
-            </form>
-            <!-- Event table -->
-            <table id="event-table">
-                <thead>
-                    <tr>
-                        <th>Event Name</th>
-                        <th>Date</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Events will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
-    </div>
-    <script>
-        // Event form submission
-        document.getElementById("event-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
+  <div class="container">
+    <h2>Event Management</h2>
+    <p class="role-message" id="roleInfo"></p>
 
-                // Get form data
-                var eventName = document.getElementById("event-name").value;
-                var eventDate = document.getElementById("event-date").value;
-                var eventDescription = document.getElementById("event-description").value;
+    <form id="event-form" class="hidden">
+      <label for="event-name">Event Name:</label>
+      <input type="text" id="event-name" placeholder="Enter event name" required>
 
-                // Create table row with form data
-                var newRow = "<tr><td>" + eventName + "</td><td>" + eventDate + "</td><td>" + eventDescription + "</td></tr>";
+      <label for="event-date">Event Date:</label>
+      <input type="date" id="event-date" required>
 
-                // Append new row to event table body
-                var tableBody = document.querySelector("#event-table tbody");
-                tableBody.innerHTML += newRow;
+      <label for="event-description">Description:</label>
+      <textarea id="event-description" rows="4" placeholder="Enter event description" required></textarea>
 
-                // Clear form fields after submission
-                document.getElementById("event-name").value = "";
-                document.getElementById("event-date").value = "";
-                document.getElementById("event-description").value = "";
-            });
-    </script>
+      <button type="submit">Add Event</button>
+    </form>
+
+    <table id="event-table">
+      <thead>
+        <tr>
+          <th>Event Name</th>
+          <th>Date</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dynamic event rows go here -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    const allowedRoles = ["student", "faculty", "parent", "alumni"];
+    const eventForm = document.getElementById("event-form");
+    const tableBody = document.querySelector("#event-table tbody");
+    const roleInfo = document.getElementById("roleInfo");
+
+    if (!loggedInUser || !allowedRoles.includes(loggedInUser.role)) {
+      alert("Access denied or not logged in.");
+      window.location.href = "Login.html";
+    } else {
+      roleInfo.textContent = `Logged in as: ${loggedInUser.fullName} (${loggedInUser.role.toUpperCase()})`;
+      if (loggedInUser.role === "faculty") {
+        eventForm.classList.remove("hidden");
+      }
+    }
+
+    const events = JSON.parse(localStorage.getItem("events")) || [];
+
+    function renderEvents() {
+      tableBody.innerHTML = "";
+      events.forEach(event => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${event.name}</td>
+          <td>${event.date}</td>
+          <td>${event.description}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    renderEvents();
+
+    if (loggedInUser.role === "faculty") {
+      eventForm.addEventListener("submit", function(e) {
+        e.preventDefault();
+        const name = document.getElementById("event-name").value.trim();
+        const date = document.getElementById("event-date").value;
+        const description = document.getElementById("event-description").value.trim();
+
+        if (!name || !date || !description) return;
+
+        const newEvent = { name, date, description };
+        events.push(newEvent);
+        localStorage.setItem("events", JSON.stringify(events));
+        renderEvents();
+
+        eventForm.reset();
+      });
+    }
+  </script>
 </body>
 </html>
