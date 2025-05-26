@@ -1,67 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
-<body>
-    <div class="container">
 
-        <!-- Attendance Management Section -->
-        <section id="attendance" class="section">
-            <h2>Attendance Management</h2>
-            <!-- Include attendance form or table here -->
-            <form id="attendance-form">
-                <label for="student-id-attendance">Student ID:</label>
-                <input type="text" id="student-id-attendance" name="student-id-attendance" required><br><br>
-                <label for="date">Date:</label>
-                <input type="date" id="date" name="date" required><br><br>
-                <label for="status">Status:</label>
-                <select id="status" name="status" required>
-                    <option value="present">Present</option>
-                    <option value="absent">Absent</option>
-                </select><br><br>
-                <button type="submit">Submit Attendance</button>
-            </form>
-            <!-- Attendance records table -->
-            <table id="attendance-table">
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Attendance records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
-    <script>document.addEventListener("DOMContentLoaded", function () {
-        // Attendance form submission
-        document.getElementById("attendance-form").addEventListener("submit", function (event) {
-            event.preventDefault(); // Prevent form submission
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Attendance Management</h2>
 
-            // Get form data
-            var studentId = document.getElementById("student-id-attendance").value;
-            var date = document.getElementById("date").value;
-            var status = document.getElementById("status").value;
+    <form id="attendance-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div>
+        <label for="student-id" class="block text-sm font-medium text-gray-700">Student ID</label>
+        <input type="text" id="student-id" required
+          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+      </div>
+      <div>
+        <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
+        <input type="date" id="date" required
+          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+      </div>
+      <div>
+        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+        <select id="status" required
+          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+          <option value="present">Present</option>
+          <option value="absent">Absent</option>
+        </select>
+      </div>
+      <div class="md:col-span-3 text-right">
+        <button type="submit"
+          class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">Submit</button>
+      </div>
+    </form>
 
-            // Create table row with form data
-            var newRow = "<tr><td>" + studentId + "</td><td>" + date + "</td><td>" + status + "</td></tr>";
+    <div class="mb-4 flex justify-between items-center">
+      <input type="text" id="searchInput" placeholder="Search by ID or Date..."
+        class="w-1/2 p-2 border border-gray-300 rounded">
+      <button onclick="exportCSV()"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
+    </div>
 
-            // Append new row to attendance table body
-            var tableBody = document.querySelector("#attendance-table tbody");
-            tableBody.innerHTML += newRow;
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white border border-gray-200 rounded-lg" id="attendance-table">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">Student ID</th>
+            <th class="px-4 py-2 text-left">Date</th>
+            <th class="px-4 py-2 text-left">Status</th>
+            <th class="px-4 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-body" class="divide-y divide-gray-200">
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-            // Clear form fields after submission
-            document.getElementById("student-id-attendance").value = "";
-            document.getElementById("date").value = "";
-            document.getElementById("status").value = "present";
-        });
-    })
-    </script>
+  <script>
+    const attendanceRecords = [];
+    const form = document.getElementById("attendance-form");
+    const tbody = document.getElementById("attendance-body");
+    const searchInput = document.getElementById("searchInput");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const id = document.getElementById("student-id").value.trim();
+      const date = document.getElementById("date").value;
+      const status = document.getElementById("status").value;
+      if (!id || !date || !status) return;
+
+      attendanceRecords.push({ id, date, status });
+      form.reset();
+      renderTable(attendanceRecords);
+    });
+
+    function renderTable(records) {
+      tbody.innerHTML = "";
+      records.forEach((record, index) => {
+        const row = `<tr>
+            <td class="px-4 py-2">${record.id}</td>
+            <td class="px-4 py-2">${record.date}</td>
+            <td class="px-4 py-2">${record.status}</td>
+            <td class="px-4 py-2">
+              <button onclick="deleteRecord(${index})" class="text-red-600 hover:underline">Delete</button>
+            </td>
+          </tr>`;
+        tbody.insertAdjacentHTML("beforeend", row);
+      });
+    }
+
+    function deleteRecord(index) {
+      if (confirm("Are you sure you want to delete this record?")) {
+        attendanceRecords.splice(index, 1);
+        renderTable(attendanceRecords);
+      }
+    }
+
+    searchInput.addEventListener("input", function () {
+      const term = this.value.toLowerCase();
+      const filtered = attendanceRecords.filter(r =>
+        r.id.toLowerCase().includes(term) || r.date.toLowerCase().includes(term)
+      );
+      renderTable(filtered);
+    });
+
+    function exportCSV() {
+      const headers = ["Student ID", "Date", "Status"];
+      const rows = attendanceRecords.map(r => [r.id, r.date, r.status]);
+      const csv = [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "attendance_records.csv";
+      link.click();
+    }
+  </script>
 </body>
-</html> 
+
+</html>
