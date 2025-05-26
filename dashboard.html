@@ -4,71 +4,94 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f7fa;
       margin: 0;
-      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f0f2f5;
+      color: #333;
     }
 
     header {
-      background-color: #3f51b5;
+      background-color: #3949ab;
       color: white;
-      padding: 1rem;
-      text-align: center;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .logout-btn {
+      background-color: #e53935;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .logout-btn:hover {
+      background-color: #c62828;
     }
 
     .container {
-      padding: 2rem;
-      max-width: 1000px;
-      margin: auto;
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .welcome {
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
     }
 
     .module-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
     }
 
     .module {
+      display: block;
       background: white;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 1.5rem;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+      font-weight: 600;
+      color: #3949ab;
+      text-decoration: none;
     }
 
     .module:hover {
-      transform: translateY(-5px);
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
       background-color: #e8eaf6;
-    }
-
-    .logout-btn {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .logout-btn:hover {
-      background-color: #d32f2f;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Welcome to the Dashboard</h1>
+    <h1>Dashboard</h1>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </header>
 
   <div class="container">
+    <div class="welcome" id="welcomeMessage"></div>
     <div id="moduleContainer" class="module-grid">
       <!-- Modules will be injected here -->
     </div>
@@ -76,53 +99,52 @@
 
   <script>
     const MODULES = {
-      "Admission Section": ["student", "faculty", "parent"],
-      "Alumni Management": ["faculty", "alumni"],
-      "Attendance Management": ["student", "faculty", "parent"],
-      "Canteen Management": ["student", "faculty"],
-      "Event Management": ["student", "faculty", "parent", "alumni"],
-      "Examination Management": ["student", "faculty", "parent"],
-      "Faculty Management": ["faculty"],
-      "Grading Section": ["student", "faculty", "parent"],
-      "Hostel Management": ["student", "faculty"],
-      "ID Card & Certificate": ["student", "faculty"],
-      "Internship & Placement": ["student", "faculty", "alumni"],
-      "Library Management": ["student", "faculty"],
-      "Marksheet Section": ["student", "faculty", "parent"],
-      "Mass SMS System": ["faculty"],
-      "Payment Section": ["student", "faculty", "parent"],
-      "Result Processing": ["student", "faculty", "parent"],
-      "Scholarship Management": ["student", "faculty"],
-      "Student Fees Management": ["student", "faculty", "parent"],
-      "Time Table Section": ["student", "faculty", "parent"],
-      "Transportation Management": ["student", "faculty", "parent"]
+      "Admission Section": { roles: ["student", "faculty", "parent"], link: "Admission Section.html" },
+      "Alumni Management": { roles: ["faculty", "alumni"], link: "Alumni Management.html" },
+      "Attendance Management": { roles: ["student", "faculty", "parent"], link: "Attendence management.html" },
+      "Canteen Management": { roles: ["student", "faculty"], link: "Canteen Management.html" },
+      "Event Management": { roles: ["student", "faculty", "parent", "alumni"], link: "Event Management.html" },
+      "Examination Management": { roles: ["student", "faculty", "parent"], link: "Examination Management.html" },
+      "Faculty Management": { roles: ["faculty"], link: "Faculty Management.html" },
+      "Grading Section": { roles: ["student", "faculty", "parent"], link: "Grading Section.html" },
+      "Hostel Management": { roles: ["student", "faculty"], link: "Hostel Management.html" },
+      "ID Card & Certificate": { roles: ["student", "faculty"], link: "Id card & Certificate.html" },
+      "Internship & Placement": { roles: ["student", "faculty", "alumni"], link: "Intership & Placement.html" },
+      "Library Management": { roles: ["student", "faculty"], link: "Library Management.html" },
+      "Marksheet Section": { roles: ["student", "faculty", "parent"], link: "Marksheet Section.html" },
+      "Mass SMS System": { roles: ["faculty"], link: "Mass SMS System.html" },
+      "Payment Section": { roles: ["student", "faculty", "parent"], link: "Payment Section.html" },
+      "Result Processing": { roles: ["student", "faculty", "parent"], link: "Result Processing.html" },
+      "Scholarship Management": { roles: ["student", "faculty"], link: "Scholarship Management.html" },
+      "Student Fees Management": { roles: ["student", "faculty", "parent"], link: "Student Fees Management.html" },
+      "Time Table Section": { roles: ["student", "faculty", "parent"], link: "Time Table Section.html" },
+      "Transportation Management": { roles: ["student", "faculty", "parent"], link: "Transportation Management.html" }
     };
 
-    // Check if user is authenticated and role is present
-    const isAuthenticated = localStorage.getItem("authenticated") === "true";
-    const userRole = localStorage.getItem("userRole");
-
-    if (!isAuthenticated || !userRole) {
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (!loggedInUser || !loggedInUser.role) {
       alert("Unauthorized. Please login.");
       window.location.href = "Login.html";
     }
 
     const moduleContainer = document.getElementById("moduleContainer");
+    const welcomeMessage = document.getElementById("welcomeMessage");
 
-    // Display modules based on user role
-    Object.entries(MODULES).forEach(([moduleName, allowedRoles]) => {
-      if (allowedRoles.includes(userRole)) {
-        const moduleDiv = document.createElement("div");
-        moduleDiv.className = "module";
-        moduleDiv.textContent = moduleName;
-        moduleContainer.appendChild(moduleDiv);
+    welcomeMessage.textContent = `Welcome, ${loggedInUser.fullName} (${loggedInUser.role.toUpperCase()})`;
+
+    Object.entries(MODULES).forEach(([moduleName, config]) => {
+      if (config.roles.includes(loggedInUser.role)) {
+        const moduleLink = document.createElement("a");
+        moduleLink.className = "module";
+        moduleLink.href = config.link;
+        moduleLink.textContent = moduleName;
+        moduleContainer.appendChild(moduleLink);
       }
     });
 
-    // Logout function
     function logout() {
-      localStorage.clear();
-      window.location.href = "index.html";
+      localStorage.removeItem("loggedInUser");
+      window.location.href = "Login.html";
     }
   </script>
 </body>
