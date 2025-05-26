@@ -1,67 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hostel Management</title>
+  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
-<body>
-    <div class="container">
-        <section id="hostel" class="section">
-            <h2>Hostel Management</h2>
-            <!-- Include hostel management form or table here -->
-            <form id="hostel-form">
-                <label for="student-id-hostel">Student ID:</label>
-                <input type="text" id="student-id-hostel" name="student-id-hostel" required><br><br>
-                <label for="hostel-room">Hostel Room:</label>
-                <input type="text" id="hostel-room" name="hostel-room" required><br><br>
-                <label for="check-in-date">Check-in Date:</label>
-                <input type="date" id="check-in-date" name="check-in-date" required><br><br>
-                <label for="check-out-date">Check-out Date:</label>
-                <input type="date" id="check-out-date" name="check-out-date" required><br><br>
-                <button type="submit">Assign Room</button>
-            </form>
-            <!-- Hostel records table -->
-            <table id="hostel-table">
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Hostel Room</th>
-                        <th>Check-in Date</th>
-                        <th>Check-out Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Hostel records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
-    </div>
-    <script>
-        // Hostel form submission
-        document.getElementById("hostel-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
+<body class="bg-gray-100 p-6">
+<div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md">
+  <h2 class="text-2xl font-bold mb-6">Hostel Management</h2>
 
-                // Get form data
-                var studentId = document.getElementById("student-id-hostel").value;
-                var hostelRoom = document.getElementById("hostel-room").value;
-                var checkInDate = document.getElementById("check-in-date").value;
-                var checkOutDate = document.getElementById("check-out-date").value;
+  <div id="hostel-form-container" class="mb-6 hidden">
+    <form id="hostel-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input type="text" id="student-id" placeholder="Student ID" class="border p-2 rounded" required>
+      <input type="text" id="hostel-room" placeholder="Hostel Room (leave blank for auto-assign)" class="border p-2 rounded">
+      <input type="date" id="check-in-date" class="border p-2 rounded" required>
+      <input type="date" id="check-out-date" class="border p-2 rounded" required>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 col-span-full">Assign Room</button>
+    </form>
+  </div>
 
-                // Create table row with form data
-                var newRow = "<tr><td>" + studentId + "</td><td>" + hostelRoom + "</td><td>" + checkInDate + "</td><td>" + checkOutDate + "</td></tr>";
+  <div class="flex justify-end space-x-2 mb-4">
+    <button onclick="exportToCSV()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Export CSV</button>
+    <button onclick="exportToPDF()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Export PDF</button>
+  </div>
 
-                // Append new row to hostel table body
-                var tableBody = document.querySelector("#hostel-table tbody");
-                tableBody.innerHTML += newRow;
+  <table id="hostel-table" class="w-full border">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="p-2">Student ID</th>
+        <th class="p-2">Hostel Room</th>
+        <th class="p-2">Check-in Date</th>
+        <th class="p-2">Check-out Date</th>
+        <th class="p-2 hidden" id="actions-header">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="hostel-body"></tbody>
+  </table>
+</div>
 
-                // Clear form fields after submission
-                document.getElementById("student-id-hostel").value = "";
-                document.getElementById("hostel-room").value = "";
-                document.getElementById("check-in-date").value = "";
-                document.getElementById("check-out-date").value = "";
-            });
-    </script>
+<script>
+const role = localStorage.getItem("role");
+const formContainer = document.getElementById("hostel-form-container");
+const actionsHeader = document.getElementById("actions-header");
+
+if (role === "faculty" || role === "admin") {
+  formContainer.classList.remove("hidden");
+  actionsHeader.classList.remove("hidden");
+}
+
+let hostelData = JSON.parse(localStorage.getItem("hostelData")) || [];
+const tableBody = document.getElementById("hostel-body");
+
+function autoAssignRoom() {
+  return 'Room-' + Math.floor(100 + Math.random() * 900);
+}
+
+function updateTable() {
+  tableBody.innerHTML = "";
+  hostelData.forEach((entry, index) => {
+    const today = new Date().toISOString().split("T")[0];
+    const checkout = new Date(entry.checkout);
+    const alertClass = entry.checkout <= today ? "bg-yellow-100" : "";
+
+    let row = `<tr class="border-t ${alertClass}">
+      <td class="p-2">${entry.studentId}</td>
+      <td class="p-2">${entry.room}</td>
+      <td class="p-2">${entry.checkin}</td>
+      <td class="p-2">${entry.checkout}</td>`;
+    if (role === "faculty" || role === "admin") {
+      row += `<td class="p-2">
+        <button onclick="editEntry(${index})" class="text-blue-600">Edit</button>
+        <button onclick="deleteEntry(${index})" class="text-red-600 ml-2">Delete</button>
+      </td>`;
+    }
+    row += `</tr>`;
+    tableBody.innerHTML += row;
+  });
+  localStorage.setItem("hostelData", JSON.stringify(hostelData));
+  new simpleDatatables.DataTable("#hostel-table");
+}
+
+document.getElementById("hostel-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  const studentId = document.getElementById("student-id").value;
+  let room = document.getElementById("hostel-room").value || autoAssignRoom();
+  const checkin = document.getElementById("check-in-date").value;
+  const checkout = document.getElementById("check-out-date").value;
+
+  hostelData.push({ studentId, room, checkin, checkout });
+  updateTable();
+  this.reset();
+});
+
+function editEntry(index) {
+  const entry = hostelData[index];
+  document.getElementById("student-id").value = entry.studentId;
+  document.getElementById("hostel-room").value = entry.room;
+  document.getElementById("check-in-date").value = entry.checkin;
+  document.getElementById("check-out-date").value = entry.checkout;
+  hostelData.splice(index, 1);
+  updateTable();
+}
+
+function deleteEntry(index) {
+  hostelData.splice(index, 1);
+  updateTable();
+}
+
+function exportToCSV() {
+  const headers = ["Student ID", "Hostel Room", "Check-in Date", "Check-out Date"];
+  const rows = hostelData.map(d => [d.studentId, d.room, d.checkin, d.checkout]);
+  const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "hostel_data.csv";
+  link.click();
+}
+
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text("Hostel Records", 14, 22);
+  doc.setFontSize(12);
+  let y = 32;
+  hostelData.forEach((e, i) => {
+    doc.text(`${i + 1}. ${e.studentId} | ${e.room} | ${e.checkin} → ${e.checkout}`, 14, y);
+    y += 8;
+  });
+  doc.save("hostel_data.pdf");
+}
+
+updateTable();
+</script>
 </body>
 </html>
