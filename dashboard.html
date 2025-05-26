@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #3f51b5;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .container {
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .module {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .module:hover {
+      transform: translateY(-5px);
+      background-color: #e8eaf6;
+    }
+
+    .logout-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Welcome to the Dashboard</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+  <div class="container">
+    <div id="moduleContainer" class="module-grid">
+      <!-- Modules will be injected here -->
+    </div>
+  </div>
+
+  <script>
+    const MODULES = {
+      "Admission Section": ["student", "faculty", "parent"],
+      "Alumni Management": ["faculty", "alumni"],
+      "Attendance Management": ["student", "faculty", "parent"],
+      "Canteen Management": ["student", "faculty"],
+      "Event Management": ["student", "faculty", "parent", "alumni"],
+      "Examination Management": ["student", "faculty", "parent"],
+      "Faculty Management": ["faculty"],
+      "Grading Section": ["student", "faculty", "parent"],
+      "Hostel Management": ["student", "faculty"],
+      "ID Card & Certificate": ["student", "faculty"],
+      "Internship & Placement": ["student", "faculty", "alumni"],
+      "Library Management": ["student", "faculty"],
+      "Marksheet Section": ["student", "faculty", "parent"],
+      "Mass SMS System": ["faculty"],
+      "Payment Section": ["student", "faculty", "parent"],
+      "Result Processing": ["student", "faculty", "parent"],
+      "Scholarship Management": ["student", "faculty"],
+      "Student Fees Management": ["student", "faculty", "parent"],
+      "Time Table Section": ["student", "faculty", "parent"],
+      "Transportation Management": ["student", "faculty", "parent"]
+    };
+
+    // Check if user is authenticated and role is present
+    const isAuthenticated = localStorage.getItem("authenticated") === "true";
+    const userRole = localStorage.getItem("userRole");
+
+    if (!isAuthenticated || !userRole) {
+      alert("Unauthorized. Please login.");
+      window.location.href = "Login.html";
+    }
+
+    const moduleContainer = document.getElementById("moduleContainer");
+
+    // Display modules based on user role
+    Object.entries(MODULES).forEach(([moduleName, allowedRoles]) => {
+      if (allowedRoles.includes(userRole)) {
+        const moduleDiv = document.createElement("div");
+        moduleDiv.className = "module";
+        moduleDiv.textContent = moduleName;
+        moduleContainer.appendChild(moduleDiv);
+      }
+    });
+
+    // Logout function
+    function logout() {
+      localStorage.clear();
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
