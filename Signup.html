@@ -279,6 +279,8 @@ section .girl {
           <option value="">Select Role</option>
           <option value="student">Student</option>
           <option value="teacher">Teacher</option>
+          <option value="parent">Parent</option>
+          <option value="alumni">Alumni</option>
         </select>
       </div>
       
@@ -292,50 +294,52 @@ section .girl {
   </section>
 
   <script>
+  document.getElementById("signupBtn").addEventListener("click", function () {
+    const fullName = document.getElementById("fullname").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+    const role = document.getElementById("role").value;
 
-    document.getElementById("signupBtn").addEventListener("click", function () {
-      const fullName = document.getElementById("fullname").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
-      const role = document.getElementById("role").value;
+    if (!fullName || !email || !username || !password || !confirmPassword || !role) {
+      alert("All fields are required.");
+      return;
+    }
 
-      if (!fullName || !email || !username || !password || !confirmPassword || !role) {
-        alert("All fields are required.");
-        return;
-      }
+    const emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+    if (!emailPattern.test(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
 
-      const emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
-      if (!emailPattern.test(email)) {
-        alert("Please enter a valid email address.");
-        return;
-      }
+    if (password !== confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
 
-      if (password !== confirmPassword) {
-        alert("Passwords do not match.");
-        return;
-      }
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+    if (users[username]) {
+      alert("Username already exists. Choose a different one.");
+      return;
+    }
 
-      const users = JSON.parse(localStorage.getItem("users")) || {};
-      if (users[username]) {
-        alert("Username already exists. Choose a different one.");
-        return;
-      }
+    const timestamp = new Date().toISOString();
 
-      const timestamp = new Date().toISOString();
-      users[username] = {
-        fullName,
-        email,
-        password,
-        role,
-        signupTime: timestamp
-      };
+    // ✅ Save user with role
+    users[username] = {
+      fullName,
+      email,
+      password,
+      role,
+      signupTime: timestamp
+    };
 
-      localStorage.setItem("users", JSON.stringify(users));
-      alert("Signup successful! You can now log in.");
-      window.location.href = "Login.html";
-    });
-  </script>
+    localStorage.setItem("users", JSON.stringify(users));
+    alert("Signup successful! You can now log in.");
+    window.location.href = "login.html"; // Make sure the filename matches
+  });
+</script>
+
 </body>
 </html>
