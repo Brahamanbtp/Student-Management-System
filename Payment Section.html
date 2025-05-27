@@ -1,69 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Online Payment Gateway</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode"></script>
+  <style>
+    body { background-color: #f8f9fa; padding: 20px; }
+    .barcode { margin-top: 10px; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Payment Section -->
-        <section id="payment" class="section">
-            <h2>Online Payment Gateway</h2>
-            <!-- Include payment form or table here -->
-            <form id="payment-form">
-                <label for="student-id-payment">Student ID:</label>
-                <input type="text" id="student-id-payment" name="student-id-payment" required><br><br>
-                <label for="amount">Amount:</label>
-                <input type="text" id="payment-amount" name="payment-amount" required><br><br>
-                <label for="payment-method">Payment Method:</label>
-                <select id="payment-method" name="payment-method" required>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="debit_card">Debit Card</option>
-                    <option value="net_banking">Net Banking</option>
-                    <option value="upi">UPI</option>
-                </select><br><br>
-                <button type="submit">Make Payment</button>
-            </form>
-            <!-- Payment records table -->
-            <table id="payment-table">
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Payment Method</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Payment records will be populated dynamically here -->
-                </tbody>
-                        
-            </table>
-        </section>
+<div class="container">
+  <h2 class="text-center mb-4">Online Payment Gateway</h2>
+
+  <form id="payment-form" class="border p-4 bg-white rounded shadow-sm mb-4">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label for="student-id" class="form-label">Student ID</label>
+        <input type="text" class="form-control" id="student-id" required>
+      </div>
+      <div class="col-md-4">
+        <label for="amount" class="form-label">Amount (₹)</label>
+        <input type="number" class="form-control" id="amount" required>
+      </div>
+      <div class="col-md-4">
+        <label for="payment-method" class="form-label">Payment Method</label>
+        <select id="payment-method" class="form-select" required>
+          <option value="Credit Card">Credit Card</option>
+          <option value="Debit Card">Debit Card</option>
+          <option value="Net Banking">Net Banking</option>
+          <option value="UPI">UPI</option>
+        </select>
+      </div>
     </div>
-    <script>
-        // Payment form submission
-        document.getElementById("payment-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
+    <button type="submit" class="btn btn-success mt-3">Make Payment</button>
+    <svg id="barcode" class="barcode hidden"></svg>
+  </form>
 
-                // Get form data
-                var studentId = document.getElementById("student-id-payment").value;
-                var amount = document.getElementById("payment-amount").value;
-                var paymentMethod = document.getElementById("payment-method").value;
-                    
-                // Create table row with form data
-                var newRow = "<tr><td>" + studentId + "</td><td>" + amount + "</td><td>" + paymentMethod + "</td></tr>";
+  <input type="text" class="form-control mb-3" id="search-input" placeholder="Search by Student ID or Method">
 
-                // Append new row to payment table body
-                var tableBody = document.querySelector("#payment-table tbody");
-                tableBody.innerHTML += newRow;
+  <table class="table table-bordered table-striped" id="payment-table">
+    <thead class="table-dark">
+      <tr>
+        <th onclick="sortTable(0)">Student ID</th>
+        <th onclick="sortTable(1)">Amount (₹)</th>
+        <th onclick="sortTable(2)">Method</th>
+        <th>Barcode Ref</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-                // Clear form fields after submission
-                document.getElementById("student-id-payment").value = "";
-                document.getElementById("payment-amount").value = "";
-                document.getElementById("payment-method").value = "credit_card"; // Default value to credit card
-            });
-    </script>
+  <button class="btn btn-primary mb-3" onclick="exportToCSV()">Export to CSV</button>
+
+  <canvas id="paymentChart" height="100"></canvas>
+</div>
+
+<script>
+  let chartInstance = null;
+  const paymentData = {};
+
+  document.getElementById("payment-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const studentId = document.getElementById("student-id").value.trim();
+    const amount = parseFloat(document.getElementById("amount").value).toFixed(2);
+    const method = document.getElementById("payment-method").value;
+    const barcodeValue = `REF-${Date.now()}`;
+
+    const tableBody = document.querySelector("#payment-table tbody");
+    const newRow = tableBody.insertRow();
+    newRow.innerHTML = `
+      <td>${studentId}</td>
+      <td>${amount}</td>
+      <td>${method}</td>
+      <td><svg class="barcode" id="barcode-${barcodeValue}"></svg></td>
+    `;
+    JsBarcode(`#barcode-${barcodeValue}`, barcodeValue, {
+      format: "CODE128",
+      width: 2,
+      height: 30,
+      displayValue: false
+    });
+
+    paymentData[method] = (paymentData[method] || 0) + parseFloat(amount);
+    updateChart();
+    this.reset();
+  });
+
+  function sortTable(n) {
+    const table = document.getElementById("payment-table");
+    let rows, switching = true, dir = "asc", switchcount = 0;
+    while (switching) {
+      switching = false;
+      rows = table.rows;
+      for (let i = 1; i < (rows.length - 1); i++) {
+        let shouldSwitch = false;
+        let x = rows[i].getElementsByTagName("TD")[n];
+        let y = rows[i + 1].getElementsByTagName("TD")[n];
+        if ((dir === "asc" && x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) ||
+            (dir === "desc" && x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase())) {
+          shouldSwitch = true;
+          break;
+        }
+      }
+      if (shouldSwitch) {
+        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+        switching = true;
+        switchcount++;
+      } else if (switchcount === 0 && dir === "asc") {
+        dir = "desc";
+        switching = true;
+      }
+    }
+  }
+
+  document.getElementById("search-input").addEventListener("input", function () {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll("#payment-table tbody tr");
+    rows.forEach(row => {
+      const cells = row.getElementsByTagName("td");
+      const match = [...cells].some(td => td.innerText.toLowerCase().includes(searchTerm));
+      row.style.display = match ? "" : "none";
+    });
+  });
+
+  function exportToCSV() {
+    const rows = document.querySelectorAll("table tr");
+    let csv = "";
+    rows.forEach(row => {
+      const cols = row.querySelectorAll("td, th");
+      const data = [...cols].map(col => `"${col.innerText}"`).join(",");
+      csv += data + "\n";
+    });
+    const blob = new Blob([csv], {type: "text/csv"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "payment_data.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function updateChart() {
+    const ctx = document.getElementById('paymentChart').getContext('2d');
+    const labels = Object.keys(paymentData);
+    const data = Object.values(paymentData);
+
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Total Amount (₹) by Method',
+          data,
+          backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: 'Payment Method Summary' }
+        }
+      }
+    });
+  }
+
+  // Role-based access
+  document.addEventListener("DOMContentLoaded", function () {
+    const role = localStorage.getItem("userRole"); // 'admin', 'faculty', 'student'
+    if (role !== "parent" && role !== "faculty" && role !== "student") {
+      document.querySelectorAll("#payment-form input, #payment-form select, #payment-form button").forEach(el => el.disabled = true);
+      const notice = document.createElement("p");
+      notice.textContent = "You have view-only access.";
+      notice.style.color = "red";
+      document.getElementById("payment-form").appendChild(notice);
+    }
+  });
+</script>
 </body>
 </html>
