@@ -3,56 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Scholarship Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .form-control, .form-select { margin-bottom: 15px; }
+        .disabled-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.7);
+            z-index: 10;
+        }
+        .message { margin-top: 10px; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <!-- Scholarship Management Section -->
-        <section id="scholarships" class="section">
-            <h2>Scholarship Management</h2>
-            <!-- Include scholarship form or table here -->
-            <form id="scholarship-form">
-                <label for="scholarship-name">Scholarship Name:</label>
-                <input type="text" id="scholarship-name" name="scholarship-name" placeholder="Enter scholarship name" required><br><br>
-                <label for="scholarship-amount">Amount:</label>
-                <input type="text" id="scholarship-amount" name="scholarship-amount" placeholder="Enter scholarship amount" required><br><br>
-                <button type="submit">Add Scholarship</button>
+        <h2 class="text-center mb-4">Scholarship Management</h2>
+
+        <div class="position-relative" id="form-wrapper">
+            <form id="scholarship-form" class="p-4 bg-white rounded shadow-sm border">
+                <label for="scholarship-name" class="form-label">Scholarship Name</label>
+                <input type="text" class="form-control" id="scholarship-name" required>
+
+                <label for="scholarship-amount" class="form-label">Amount (INR)</label>
+                <input type="number" class="form-control" id="scholarship-amount" required>
+
+                <button type="submit" class="btn btn-primary mt-2">Add Scholarship</button>
+                <div id="form-message" class="text-success message"></div>
             </form>
-            <!-- Scholarship records table -->
-            <table id="scholarship-table">
-                <thead>
-                    <tr>
-                        <th>Scholarship Name</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <!-- Scholarship records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
+        </div>
+
+        <div class="input-group my-4">
+            <input type="text" class="form-control" id="search-input" placeholder="Search by Scholarship Name or Amount">
+            <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+        </div>
+
+        <table class="table table-bordered table-hover" id="scholarship-table">
+            <thead class="table-dark">
+                <tr>
+                    <th onclick="sortTable(0)">Scholarship Name</th>
+                    <th onclick="sortTable(1)">Amount (INR)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
+
     <script>
-        // Scholarship form submission
-        document.getElementById("scholarship-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
+        const userRole = localStorage.getItem("userRole") || "student"; // Set 'admin', 'faculty', or 'student'
+        const form = document.getElementById("scholarship-form");
+        const formWrapper = document.getElementById("form-wrapper");
+        const message = document.getElementById("form-message");
 
-                // Get form data
-                var scholarshipName = document.getElementById("scholarship-name").value;
-                var scholarshipAmount = document.getElementById("scholarship-amount").value;
+        if (userRole !== "admin" && userRole !== "faculty") {
+            const overlay = document.createElement("div");
+            overlay.className = "disabled-overlay";
+            overlay.innerHTML = "<div class='text-danger text-center mt-5 fw-bold'>You have view-only access</div>";
+            formWrapper.appendChild(overlay);
+            form.querySelectorAll("input, button").forEach(el => el.disabled = true);
+        }
 
-                // Create table row with form data
-                var newRow = "<tr><td>" + scholarshipName + "</td><td>" + scholarshipAmount + "</td></tr>";
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const name = document.getElementById("scholarship-name").value.trim();
+            const amount = document.getElementById("scholarship-amount").value.trim();
 
-                // Append new row to scholarship table body
-                var tableBody = document.querySelector("#scholarship-table tbody");
-                tableBody.innerHTML += newRow;
+            if (!name || !amount) return;
 
-                // Clear form fields after submission
-                document.getElementById("scholarship-name").value = "";
-                document.getElementById("scholarship-amount").value = "";
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${name}</td><td>${amount}</td>`;
+            document.querySelector("#scholarship-table tbody").appendChild(row);
+
+            message.textContent = "Scholarship added successfully!";
+            form.reset();
+            setTimeout(() => { message.textContent = ""; }, 2000);
+        });
+
+        document.getElementById("search-input").addEventListener("input", function () {
+            const value = this.value.toLowerCase();
+            document.querySelectorAll("#scholarship-table tbody tr").forEach(row => {
+                row.style.display = [...row.cells].some(cell => cell.textContent.toLowerCase().includes(value)) ? "" : "none";
             });
+        });
+
+        function sortTable(colIndex) {
+            const table = document.getElementById("scholarship-table");
+            let switching = true, dir = "asc", switchcount = 0;
+
+            while (switching) {
+                switching = false;
+                const rows = table.rows;
+                for (let i = 1; i < rows.length - 1; i++) {
+                    let shouldSwitch = false;
+                    let x = rows[i].getElementsByTagName("TD")[colIndex];
+                    let y = rows[i + 1].getElementsByTagName("TD")[colIndex];
+
+                    let valX = isNaN(x.innerText) ? x.innerText.toLowerCase() : parseFloat(x.innerText);
+                    let valY = isNaN(y.innerText) ? y.innerText.toLowerCase() : parseFloat(y.innerText);
+
+                    if ((dir === "asc" && valX > valY) || (dir === "desc" && valX < valY)) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else if (switchcount === 0 && dir === "asc") {
+                    dir = "desc";
+                    switching = true;
+                }
+            }
+        }
+
+        function exportToCSV() {
+            const rows = document.querySelectorAll("#scholarship-table tr");
+            let csv = Array.from(rows).map(row =>
+                Array.from(row.cells).map(cell => `"${cell.innerText}"`).join(",")
+            ).join("\n");
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "scholarship_records.csv";
+            a.click();
+        }
     </script>
 </body>
 </html>
