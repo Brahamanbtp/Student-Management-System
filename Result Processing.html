@@ -1,63 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Result Processing System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 30px;
+    }
+    .table th {
+      cursor: pointer;
+    }
+    #chart_div {
+      margin-top: 30px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Result Processing Section -->
-        <section id="result-processing" class="section">
-            <h2>Result Processing</h2>
-            <!-- Include result processing form or table here -->
-            <form id="result-processing-form">
-                <label for="student-id-result">Student ID:</label>
-                <input type="text" id="student-id-result" name="student-id-result" placeholder="Enter student ID" required><br><br>
-                <label for="subject">Subject:</label>
-                <input type="text" id="result-subject" name="result-subject" placeholder="Enter subject" required><br><br>
-                <label for="marks-obtained">Marks Obtained:</label>
-                <input type="text" id="marks-obtained" name="marks-obtained" placeholder="Enter marks obtained" required><br><br>
-                <button type="submit">Add Result</button>
-            </form>
-            <!-- Result records table -->
-            <table id="result-table">
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Subject</th>
-                        <th>Marks Obtained</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Result records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
+  <div class="container">
+    <h2 class="text-center mb-4">Result Processing Module</h2>
+
+    <form id="result-processing-form" class="border p-4 bg-white rounded shadow-sm mb-4">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="student-id-result" class="form-label">Student ID</label>
+          <input type="text" class="form-control" id="student-id-result" required />
+        </div>
+        <div class="col-md-4">
+          <label for="result-subject" class="form-label">Subject</label>
+          <input type="text" class="form-control" id="result-subject" required />
+        </div>
+        <div class="col-md-4">
+          <label for="marks-obtained" class="form-label">Marks Obtained / Total</label>
+          <input type="text" class="form-control" id="marks-obtained" placeholder="e.g. 42/50" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">Add Result</button>
+    </form>
+
+    <div class="mb-3 d-flex justify-content-between">
+      <input type="text" class="form-control w-50" id="search-input" placeholder="Search by ID or Subject" />
+      <button class="btn btn-success ms-3" onclick="downloadCSV()">Export CSV</button>
     </div>
-    <script>
-        // Result processing form submission
-        document.getElementById("result-processing-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
 
-                // Get form data
-                var studentId = document.getElementById("student-id-result").value;
-                var subject = document.getElementById("result-subject").value;
-                var marksObtained = document.getElementById("marks-obtained").value;
+    <table class="table table-striped table-bordered" id="result-table">
+      <thead class="table-dark">
+        <tr>
+          <th onclick="sortTable(0)">Student ID</th>
+          <th onclick="sortTable(1)">Subject</th>
+          <th onclick="sortTable(2)">Marks Obtained</th>
+          <th>Percentage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-                // Create table row with form data
-                var newRow = "<tr><td>" + studentId + "</td><td>" + subject + "</td><td>" + marksObtained + "</td></tr>";
+    <div id="chart_div" style="height: 400px;"></div>
+  </div>
 
-                // Append new row to result table body
-                var tableBody = document.querySelector("#result-table tbody");
-                tableBody.innerHTML += newRow;
+  <script>
+    let chartData = [['Subject', 'Marks']];
 
-                // Clear form fields after submission
-                document.getElementById("student-id-result").value = "";
-                document.getElementById("result-subject").value = "";
-                document.getElementById("marks-obtained").value = "";
-            });
-    </script>
+    document.getElementById("result-processing-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const studentId = document.getElementById("student-id-result").value.trim();
+      const subject = document.getElementById("result-subject").value.trim();
+      const marksInput = document.getElementById("marks-obtained").value.trim();
+      const [obtained, total] = marksInput.split('/').map(Number);
+
+      if (isNaN(obtained) || isNaN(total) || obtained > total) {
+        alert("Invalid marks input.");
+        return;
+      }
+
+      const percentage = ((obtained / total) * 100).toFixed(2);
+      const status = percentage >= 35 ? "Pass" : "Fail";
+
+      const row = `
+        <tr>
+          <td>${studentId}</td>
+          <td>${subject}</td>
+          <td>${obtained}/${total}</td>
+          <td>${percentage}%</td>
+          <td>${status}</td>
+        </tr>
+      `;
+      document.querySelector("#result-table tbody").innerHTML += row;
+
+      chartData.push([subject, obtained]);
+      drawChart();
+
+      document.getElementById("result-processing-form").reset();
+    });
+
+    function sortTable(n) {
+      const table = document.getElementById("result-table");
+      let switching = true, dir = "asc", switchcount = 0;
+      while (switching) {
+        switching = false;
+        let rows = table.rows;
+        for (let i = 1; i < (rows.length - 1); i++) {
+          let x = rows[i].getElementsByTagName("TD")[n];
+          let y = rows[i + 1].getElementsByTagName("TD")[n];
+          let shouldSwitch = false;
+          if (dir == "asc" ? x.innerText.toLowerCase() > y.innerText.toLowerCase()
+                           : x.innerText.toLowerCase() < y.innerText.toLowerCase()) {
+            shouldSwitch = true;
+            break;
+          }
+        }
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+          switchcount++;
+        } else if (switchcount == 0 && dir == "asc") {
+          dir = "desc";
+          switching = true;
+        }
+      }
+    }
+
+    document.getElementById("search-input").addEventListener("input", function () {
+      const search = this.value.toLowerCase();
+      document.querySelectorAll("#result-table tbody tr").forEach(row => {
+        const cells = Array.from(row.getElementsByTagName("td"));
+        const match = cells.some(td => td.innerText.toLowerCase().includes(search));
+        row.style.display = match ? "" : "none";
+      });
+    });
+
+    function downloadCSV() {
+      let csv = "Student ID,Subject,Marks Obtained,Percentage,Status\n";
+      document.querySelectorAll("#result-table tbody tr").forEach(row => {
+        const cols = row.querySelectorAll("td");
+        const rowData = Array.from(cols).map(td => td.innerText).join(",");
+        csv += rowData + "\n";
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "results.csv";
+      link.click();
+    }
+
+    google.charts.load("current", { packages: ["corechart"] });
+    function drawChart() {
+      const data = google.visualization.arrayToDataTable(chartData);
+      const options = {
+        title: "Marks Distribution",
+        pieHole: 0.4,
+        chartArea: { width: '85%', height: '80%' }
+      };
+      const chart = new google.visualization.PieChart(document.getElementById("chart_div"));
+      chart.draw(data, options);
+    }
+  </script>
+
+  <script>
+    // Role-based access control
+    document.addEventListener("DOMContentLoaded", function () {
+      const role = localStorage.getItem("userRole");
+      const form = document.getElementById("result-processing-form");
+
+      if (role !== "faculty" && role !== "admin") {
+        form.querySelectorAll("input, button").forEach(el => el.disabled = true);
+        const notice = document.createElement("p");
+        notice.textContent = "View-only access. Editing is restricted.";
+        notice.style.color = "red";
+        form.appendChild(notice);
+      }
+    });
+  </script>
 </body>
 </html>
