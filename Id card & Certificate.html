@@ -1,68 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ID Card & Certificate Generation</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" defer></script>
+  <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .signature {
+      font-family: 'Brush Script MT', cursive;
+      font-size: 20px;
+    }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <!-- ID Card & Certificate Generation Section -->
-        <section id="id-cards-certificates" class="section">
-            <h2>ID Card & Certificate Generation</h2>
-            <!-- Include ID card and certificate form or table here -->
-            <form id="id-cards-certificates-form">
-                <label for="student-id-id-cards">Student ID:</label>
-                <input type="text" id="student-id-id-cards" name="student-id-id-cards" required><br><br>
-                <label for="card-type">Card Type:</label>
-                <select id="card-type" name="card-type" required>
-                    <option value="id-card">ID Card</option>
-                    <option value="certificate">Certificate</option>
-                </select><br><br>
-                <button type="submit">Generate</button>
-            </form>
-            <!-- ID card and certificate records table -->
-            <table id="id-cards-certificates-table">
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Card Type</th>
-                        <th>Download Link</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- ID card and certificate records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
-    </div>
-    <script>
-        // ID card and certificate form submission
-        document.getElementById("id-cards-certificates-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
+<body class="bg-gray-100 p-6">
+  <div class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow-md">
+    <h2 class="text-2xl font-bold mb-6">ID Card & Certificate Generation</h2>
 
-                // Get form data
-                var cardType = document.getElementById("card-type").value;
-                var downloadLink = generateDownloadLink(studentId, cardType);
-                
-                // Create table row with form data
-                var newRow = "<tr><td>" + studentId + "</td><td>" + cardType + "</td><td><a href='" + downloadLink + "' download>Download</a></td></tr>";
-                
-                // Append new row to ID card and certificate table body
-                var tableBody = document.querySelector("#id-cards-certificates-table tbody");
-                tableBody.innerHTML += newRow;
-                
-                // Clear form fields after submission
-                document.getElementById("student-id-id-cards").value = "";
-                var studentId = document.getElementById("student-id-id-cards").value; 
-            });
-        // Function to generate download link based on student ID and card type
-        function generateDownloadLink(studentId, cardType) {
-                // Logic to generate download link goes here
-                // For demonstration purposes, we'll just return a placeholder link
-                return "http://example.com/" + studentId + "_" + cardType + ".pdf";
-            };    
-    </script>
+    <div id="form-container" class="mb-6 hidden">
+      <form id="id-form" class="grid gap-4 grid-cols-1 md:grid-cols-2">
+        <input type="text" id="student-id" placeholder="Student ID" class="p-2 border rounded" required>
+        <select id="card-type" class="p-2 border rounded" required>
+          <option value="id-card">ID Card</option>
+          <option value="certificate">Certificate</option>
+        </select>
+        <button type="submit" class="col-span-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Generate</button>
+      </form>
+    </div>
+
+    <div class="flex justify-end gap-2 mb-4">
+      <button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
+    </div>
+
+    <table id="records-table" class="table-auto w-full border">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="px-4 py-2">Student ID</th>
+          <th class="px-4 py-2">Card Type</th>
+          <th class="px-4 py-2">Download</th>
+        </tr>
+      </thead>
+      <tbody id="records-body" class="text-center"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const role = localStorage.getItem("role") || "guest"; // Default role
+    const formContainer = document.getElementById("form-container");
+    if (role === "admin" || role === "faculty") {
+      formContainer.classList.remove("hidden");
+    }
+
+    const records = JSON.parse(localStorage.getItem("idRecords")) || [];
+    const tableBody = document.getElementById("records-body");
+
+    function renderRecords() {
+      tableBody.innerHTML = "";
+      records.forEach((rec, index) => {
+        tableBody.innerHTML += `
+          <tr class="border-t">
+            <td class="px-4 py-2">${rec.studentId}</td>
+            <td class="px-4 py-2">${rec.cardType}</td>
+            <td class="px-4 py-2"><a href="${rec.link}" download class="text-blue-600 hover:underline">Download</a></td>
+          </tr>`;
+      });
+      new simpleDatatables.DataTable("#records-table");
+    }
+
+    function exportCSV() {
+      const rows = [["Student ID", "Card Type", "Download Link"], ...records.map(r => [r.studentId, r.cardType, r.link])];
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csvContent));
+      link.setAttribute("download", "id_records.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    document.getElementById("id-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const studentId = document.getElementById("student-id").value.trim();
+      const cardType = document.getElementById("card-type").value;
+
+      const pdfLink = await generatePDF(studentId, cardType);
+      records.push({ studentId, cardType, link: pdfLink });
+      localStorage.setItem("idRecords", JSON.stringify(records));
+      renderRecords();
+      e.target.reset();
+    });
+
+    async function generatePDF(studentId, cardType) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(22);
+      doc.text(cardType === "id-card" ? "Student ID Card" : "Certificate of Achievement", 20, 20);
+      doc.setFontSize(14);
+      doc.text(`Student ID: ${studentId}`, 20, 40);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
+
+      // E-signature
+      doc.text("Authorized Signature:", 20, 90);
+      doc.setFont("courier", "italic");
+      doc.text("Director, Academic Affairs", 20, 100);
+
+      // QR Code generation
+      const qrContainer = document.createElement("div");
+      new QRCode(qrContainer, {
+        text: `ID:${studentId}, Type:${cardType}`,
+        width: 80,
+        height: 80
+      });
+
+      const qrImg = qrContainer.querySelector("img");
+      await new Promise(resolve => qrImg.onload = resolve);
+      doc.addImage(qrImg.src, "PNG", 150, 20, 40, 40);
+
+      const filename = `${studentId}_${cardType}.pdf`;
+      const pdfUrl = doc.output("bloburl");
+      return pdfUrl;
+    }
+
+    renderRecords();
+  </script>
 </body>
 </html>
