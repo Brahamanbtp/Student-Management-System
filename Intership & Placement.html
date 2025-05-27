@@ -1,63 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Internships and Placement</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <!-- Internships and Placement Section -->
-        <section id="internships-placement" class="section">
-            <h2>Internships and Placement</h2>
-            <!-- Include internships and placement form or table here -->
-            <form id="internship-placement-form">
-                <label for="company-name">Company Name:</label>
-                <input type="text" id="company-name" name="company-name" placeholder="Enter company name" required><br><br>
-                <label for="internship-role">Internship Role:</label>
-                <input type="text" id="internship-role" name="internship-role" placeholder="Enter internship role" required><br><br>
-                <label for="placement-role">Placement Role:</label>
-                <input type="text" id="placement-role" name="placement-role" placeholder="Enter placement role" required><br><br>
-                <button type="submit">Add Internship/Placement</button>
-            </form>
-            <!-- Internships and placement records table -->
-            <table id="internship-placement-table">
-                <thead>
-                    <tr>
-                        <th>Company Name</th>
-                        <th>Internship Role</th>
-                        <th>Placement Role</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Internships and placement records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+    <h2 class="text-3xl font-bold mb-6">Internships and Placement</h2>
+
+    <!-- Admin/Faculty Only Form -->
+    <div id="form-section" class="mb-6 hidden">
+      <form id="internship-placement-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" id="company-name" placeholder="Company Name" class="border p-2 rounded" required />
+        <input type="text" id="internship-role" placeholder="Internship Role" class="border p-2 rounded" />
+        <input type="text" id="placement-role" placeholder="Placement Role" class="border p-2 rounded" />
+        <input type="date" id="placement-date" class="border p-2 rounded" required />
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 col-span-1 md:col-span-2">Add Record</button>
+      </form>
     </div>
-    <script>
-        // Internships and placement form submission
-        document.getElementById("internship-placement-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
 
-                // Get form data
-                var companyName = document.getElementById("company-name").value;
-                var internshipRole = document.getElementById("internship-role").value;
-                var placementRole = document.getElementById("placement-role").value;
+    <div class="flex justify-end gap-2 mb-4">
+      <button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
+      <button onclick="generatePDF()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Generate PDF</button>
+    </div>
 
-                // Create table row with form data
-                var newRow = "<tr><td>" + companyName + "</td><td>" + internshipRole + "</td><td>" + placementRole + "</td></tr>";
+    <table id="internship-placement-table" class="w-full text-left border">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="p-2">Company Name</th>
+          <th class="p-2">Internship Role</th>
+          <th class="p-2">Placement Role</th>
+          <th class="p-2">Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-                // Append new row to internship and placement table body
-                var tableBody = document.querySelector("#internship-placement-table tbody");
-                tableBody.innerHTML += newRow;
+    <h3 class="text-xl font-semibold mt-8 mb-4">Placement Overview</h3>
+    <canvas id="placementChart" class="w-full h-64"></canvas>
+  </div>
 
-                // Clear form fields after submission
-                document.getElementById("company-name").value = "";
-                document.getElementById("internship-role").value = "";
-                document.getElementById("placement-role").value = "";
-            });
-    </script>
+  <script>
+    const role = localStorage.getItem("role") || "student";
+    const formSection = document.getElementById("form-section");
+    if (role === "admin" || role === "faculty") formSection.classList.remove("hidden");
+
+    let records = JSON.parse(localStorage.getItem("internPlacementData")) || [];
+
+    const tableBody = document.querySelector("#internship-placement-table tbody");
+    const form = document.getElementById("internship-placement-form");
+
+    function updateTable() {
+      tableBody.innerHTML = "";
+      records.forEach((rec, index) => {
+        const row = `<tr class="border-t">
+          <td class="p-2">${rec.company}</td>
+          <td class="p-2">${rec.internship}</td>
+          <td class="p-2">${rec.placement}</td>
+          <td class="p-2">${rec.date}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+      });
+      localStorage.setItem("internPlacementData", JSON.stringify(records));
+      new simpleDatatables.DataTable("#internship-placement-table");
+      renderChart();
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const newRecord = {
+        company: document.getElementById("company-name").value,
+        internship: document.getElementById("internship-role").value,
+        placement: document.getElementById("placement-role").value,
+        date: document.getElementById("placement-date").value,
+      };
+      records.push(newRecord);
+      form.reset();
+      updateTable();
+    });
+
+    function exportCSV() {
+      const csv = [
+        ["Company Name", "Internship Role", "Placement Role", "Date"],
+        ...records.map(r => [r.company, r.internship, r.placement, r.date])
+      ];
+      const blob = new Blob([csv.map(e => e.join(",")).join("\n")], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "internships_placements.csv";
+      link.click();
+    }
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.text("Internships & Placement Records", 14, 22);
+      doc.setFontSize(12);
+      let y = 30;
+      records.forEach((r, i) => {
+        doc.text(`${i + 1}. ${r.company} | ${r.internship} | ${r.placement} | ${r.date}`, 14, y);
+        y += 8;
+      });
+      doc.save("internships_placements.pdf");
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById("placementChart").getContext("2d");
+      if (window.placementChart) window.placementChart.destroy();
+      const companyCount = {};
+      records.forEach(r => {
+        if (!companyCount[r.company]) companyCount[r.company] = 0;
+        companyCount[r.company]++;
+      });
+      window.placementChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: Object.keys(companyCount),
+          datasets: [{
+            label: "Total Placements",
+            data: Object.values(companyCount),
+            backgroundColor: "rgba(59, 130, 246, 0.5)",
+            borderColor: "rgba(59, 130, 246, 1)",
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: "No. of Students" }
+            }
+          }
+        }
+      });
+    }
+
+    updateTable();
+  </script>
 </body>
 </html>
