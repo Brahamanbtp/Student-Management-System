@@ -1,64 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Transportation Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+    .disabled-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.7);
+      z-index: 10;
+      text-align: center;
+      padding-top: 50px;
+      font-weight: bold;
+      color: #dc3545;
+    }
+    .message {
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Transportation Management Section -->
-        <section id="transport" class="section">
-            <h2>Transportation Management</h2>
-            <!-- Include transport form or table here -->
-            <form id="transport-form">
-                <label for="student-id-transport">Student ID:</label>
-                <input type="text" id="student-id-transport" name="student-id-transport" required><br><br>
-                <label for="route">Route:</label>
-                <input type="text" id="route" name="route" required><br><br>
-                <label for="vehicle-no">Vehicle No:</label>
-                <input type="text" id="vehicle-no" name="vehicle-no" required><br><br>
-                <button type="submit">Assign Transport</button>
-            </form>
-            <!-- Transport records table -->
-            <table id="transport-table">
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Route</th>
-                        <th>Vehicle No</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Transport records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
+  <div class="container">
+    <h2 class="text-center mb-4">Transportation Management</h2>
+
+    <div class="position-relative" id="form-wrapper">
+      <form id="transport-form" class="bg-white p-4 rounded shadow-sm border">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label for="student-id-transport" class="form-label">Student ID</label>
+            <input type="text" class="form-control" id="student-id-transport" required>
+          </div>
+          <div class="col-md-4">
+            <label for="route" class="form-label">Route</label>
+            <input type="text" class="form-control" id="route" required>
+          </div>
+          <div class="col-md-4">
+            <label for="vehicle-no" class="form-label">Vehicle No</label>
+            <input type="text" class="form-control" id="vehicle-no" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Assign Transport</button>
+        <div id="form-message" class="text-success message"></div>
+      </form>
     </div>
-    <script>
-        // Transport form submission
-        document.getElementById("transport-form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent form submission
 
-                // Get form data
-                var studentId = document.getElementById("student-id-transport").value;
-                var route = document.getElementById("route").value;
-                var vehicleNo = document.getElementById("vehicle-no").value;
+    <div class="input-group my-4">
+      <input type="text" class="form-control" id="search-input" placeholder="Search by Student ID, Route, or Vehicle No">
+      <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+    </div>
 
-                // Create table row with form data
-                var newRow = "<tr><td>" + studentId + "</td><td>" + route + "</td><td>" + vehicleNo + "</td></tr>";
+    <table class="table table-bordered table-hover" id="transport-table">
+      <thead class="table-dark">
+        <tr>
+          <th onclick="sortTable(0)">Student ID</th>
+          <th onclick="sortTable(1)">Route</th>
+          <th onclick="sortTable(2)">Vehicle No</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Records will be added dynamically -->
+      </tbody>
+    </table>
+  </div>
 
-                // Append new row to transport table body
-                var tableBody = document.querySelector("#transport-table tbody");
-                tableBody.innerHTML += newRow;
+  <script>
+    const userRole = localStorage.getItem("userRole") || "student"; // Change this in your login system
+    const form = document.getElementById("transport-form");
+    const formWrapper = document.getElementById("form-wrapper");
+    const message = document.getElementById("form-message");
 
-                // Clear form fields after submission
-                document.getElementById("student-id-transport").value = "";
-                document.getElementById("route").value = "";
-                document.getElementById("vehicle-no").value = "";
-            });
-    </script>
-    
+    if (userRole !== "admin" && userRole !== "staff") {
+      const overlay = document.createElement("div");
+      overlay.className = "disabled-overlay";
+      overlay.innerText = "View-only access. Log in as admin/staff to assign transport.";
+      formWrapper.appendChild(overlay);
+      form.querySelectorAll("input, button").forEach(el => el.disabled = true);
+    }
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const studentId = document.getElementById("student-id-transport").value.trim();
+      const route = document.getElementById("route").value.trim();
+      const vehicleNo = document.getElementById("vehicle-no").value.trim();
+
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `<td>${studentId}</td><td>${route}</td><td>${vehicleNo}</td>`;
+      document.querySelector("#transport-table tbody").appendChild(newRow);
+
+      message.textContent = "Transport assigned successfully!";
+      form.reset();
+      setTimeout(() => { message.textContent = ""; }, 2000);
+    });
+
+    document.getElementById("search-input").addEventListener("input", function () {
+      const value = this.value.toLowerCase();
+      document.querySelectorAll("#transport-table tbody tr").forEach(row => {
+        row.style.display = [...row.cells].some(cell =>
+          cell.textContent.toLowerCase().includes(value)
+        ) ? "" : "none";
+      });
+    });
+
+    function sortTable(colIndex) {
+      const table = document.getElementById("transport-table");
+      let switching = true, dir = "asc", switchcount = 0;
+      while (switching) {
+        switching = false;
+        const rows = table.rows;
+        for (let i = 1; i < rows.length - 1; i++) {
+          let shouldSwitch = false;
+          let x = rows[i].getElementsByTagName("TD")[colIndex];
+          let y = rows[i + 1].getElementsByTagName("TD")[colIndex];
+          let valX = x.innerText.toLowerCase();
+          let valY = y.innerText.toLowerCase();
+          if ((dir === "asc" && valX > valY) || (dir === "desc" && valX < valY)) {
+            shouldSwitch = true;
+            break;
+          }
+        }
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+          switchcount++;
+        } else if (switchcount === 0 && dir === "asc") {
+          dir = "desc";
+          switching = true;
+        }
+      }
+    }
+
+    function exportToCSV() {
+      const rows = document.querySelectorAll("#transport-table tr");
+      let csv = Array.from(rows).map(row =>
+        Array.from(row.cells).map(cell => `"${cell.innerText}"`).join(",")
+      ).join("\n");
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "transport_data.csv";
+      a.click();
+    }
+  </script>
 </body>
 </html>
