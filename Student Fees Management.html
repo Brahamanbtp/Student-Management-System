@@ -1,59 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Fees Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+    .disabled-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.7);
+      z-index: 10;
+      text-align: center;
+      padding-top: 50px;
+      font-weight: bold;
+      color: #dc3545;
+    }
+    .message {
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Student Fees Management Section -->
-        <section id="fees" class="section">
-            <h2>Student Fees Management</h2>
-            <!-- Include fees form or table here -->
-            <form id="fees-form">
-                <label for="student-id-fees">Student ID:</label>
-                <input type="text" id="student-id-fees" name="student-id-fees" required><br><br>
-                <label for="amount">Amount:</label>
-                <input type="text" id="amount" name="amount" required><br><br>
-                <button type="submit">Submit Fees</button>
-            </form>
-            <!-- Fees records table -->
-            <table id="fees-table">
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Amount</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Fees records will be populated dynamically here -->
-                </tbody>
-            </table>
-        </section>
+  <div class="container">
+    <h2 class="text-center mb-4">Student Fees Management</h2>
 
+    <div class="position-relative" id="form-wrapper">
+      <form id="fees-form" class="bg-white p-4 rounded shadow-sm border">
+        <label for="student-id-fees" class="form-label">Student ID</label>
+        <input type="text" class="form-control" id="student-id-fees" required>
+
+        <label for="amount" class="form-label mt-3">Amount (INR)</label>
+        <input type="number" class="form-control" id="amount" required>
+
+        <button type="submit" class="btn btn-primary mt-3">Submit Fees</button>
+        <div id="form-message" class="text-success message"></div>
+      </form>
     </div>
-    <script>// Student fees form submission
-        document.getElementById("fees-form").addEventListener("submit", function (event) {
-            event.preventDefault(); // Prevent form submission
 
-            // Get form data
-            var studentId = document.getElementById("student-id-fees").value;
-            var amount = document.getElementById("amount").value;
-            var date = new Date().toLocaleDateString(); // Get current date
+    <div class="input-group my-4">
+      <input type="text" class="form-control" id="search-input" placeholder="Search by Student ID or Amount">
+      <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+    </div>
 
-            // Create table row with form data
-            var newRow = "<tr><td>" + studentId + "</td><td>" + amount + "</td><td>" + date + "</td></tr>";
+    <table class="table table-bordered table-hover" id="fees-table">
+      <thead class="table-dark">
+        <tr>
+          <th onclick="sortTable(0)">Student ID</th>
+          <th onclick="sortTable(1)">Amount (INR)</th>
+          <th onclick="sortTable(2)">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Fee records go here -->
+      </tbody>
+    </table>
+  </div>
 
-            // Append new row to fees table body
-            var tableBody = document.querySelector("#fees-table tbody");
-            tableBody.innerHTML += newRow;
+  <script>
+    // Simulated role from localStorage (admin, faculty, student)
+    const userRole = localStorage.getItem("userRole") || "student";
+    const form = document.getElementById("fees-form");
+    const formWrapper = document.getElementById("form-wrapper");
+    const message = document.getElementById("form-message");
 
-            // Clear form fields after submission
-            document.getElementById("student-id-fees").value = "";
-            document.getElementById("amount").value = "";
-        });</script>
+    if (userRole !== "admin" && userRole !== "faculty") {
+      const overlay = document.createElement("div");
+      overlay.className = "disabled-overlay";
+      overlay.innerText = "View-only access. Log in as admin/faculty to manage records.";
+      formWrapper.appendChild(overlay);
+      form.querySelectorAll("input, button").forEach(el => el.disabled = true);
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const studentId = document.getElementById("student-id-fees").value.trim();
+      const amount = document.getElementById("amount").value.trim();
+      const date = new Date().toLocaleDateString();
+
+      if (!studentId || !amount) return;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${studentId}</td><td>${amount}</td><td>${date}</td>`;
+      document.querySelector("#fees-table tbody").appendChild(row);
+
+      message.textContent = "Fees submitted successfully!";
+      form.reset();
+      setTimeout(() => { message.textContent = ""; }, 2000);
+    });
+
+    document.getElementById("search-input").addEventListener("input", function () {
+      const value = this.value.toLowerCase();
+      document.querySelectorAll("#fees-table tbody tr").forEach(row => {
+        row.style.display = [...row.cells].some(cell =>
+          cell.textContent.toLowerCase().includes(value)
+        ) ? "" : "none";
+      });
+    });
+
+    function sortTable(colIndex) {
+      const table = document.getElementById("fees-table");
+      let switching = true, dir = "asc", switchcount = 0;
+      while (switching) {
+        switching = false;
+        const rows = table.rows;
+        for (let i = 1; i < rows.length - 1; i++) {
+          let shouldSwitch = false;
+          let x = rows[i].getElementsByTagName("TD")[colIndex];
+          let y = rows[i + 1].getElementsByTagName("TD")[colIndex];
+          let valX = isNaN(x.innerText) ? x.innerText.toLowerCase() : parseFloat(x.innerText);
+          let valY = isNaN(y.innerText) ? y.innerText.toLowerCase() : parseFloat(y.innerText);
+          if ((dir === "asc" && valX > valY) || (dir === "desc" && valX < valY)) {
+            shouldSwitch = true;
+            break;
+          }
+        }
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+          switchcount++;
+        } else if (switchcount === 0 && dir === "asc") {
+          dir = "desc";
+          switching = true;
+        }
+      }
+    }
+
+    function exportToCSV() {
+      const rows = document.querySelectorAll("#fees-table tr");
+      let csv = Array.from(rows).map(row =>
+        Array.from(row.cells).map(cell => `"${cell.innerText}"`).join(",")
+      ).join("\n");
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "student_fees_records.csv";
+      a.click();
+    }
+  </script>
 </body>
 </html>
