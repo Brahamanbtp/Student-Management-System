@@ -1,151 +1,181 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>Student Management Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/framer-motion@10.12.16/dist/framer-motion.umd.js"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: #f0f2f5;
-      color: #333;
-    }
-
-    header {
-      background-color: #3949ab;
+    .dark-mode {
+      background-color: #1f2937;
       color: white;
-      padding: 1.5rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-
-    header h1 {
-      margin: 0;
-      font-size: 1.5rem;
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-in-out;
     }
-
-    .logout-btn {
-      background-color: #e53935;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .logout-btn:hover {
-      background-color: #c62828;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-
-    .welcome {
-      font-size: 1.2rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .module-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .module {
-      display: block;
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-      font-weight: 600;
-      color: #3949ab;
-      text-decoration: none;
-    }
-
-    .module:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-      background-color: #e8eaf6;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
-<body>
-  <header>
-    <h1>Dashboard</h1>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+<body class="min-h-screen transition-colors duration-300 bg-gray-100 dark:bg-gray-900 dark:text-white">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white py-4 shadow dark:bg-indigo-700">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-semibold">Student Management Dashboard</h1>
+        <p id="userInfo" class="text-sm text-indigo-200 mt-1"></p>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Dark Mode Toggle -->
+        <label class="inline-flex items-center cursor-pointer">
+          <span class="mr-2 text-sm">Dark Mode</span>
+          <input type="checkbox" id="themeToggle" class="sr-only peer">
+          <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-indigo-500 relative">
+            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 peer-checked:translate-x-full transition-transform"></div>
+          </div>
+        </label>
+
+        <!-- Profile Dropdown -->
+        <div class="relative group">
+          <img src="https://i.pravatar.cc/40" alt="User Avatar" class="w-9 h-9 rounded-full border-2 border-white cursor-pointer">
+          <div class="absolute right-0 mt-2 w-40 bg-white text-black rounded shadow-lg hidden group-hover:block z-50 dark:bg-gray-800 dark:text-white">
+            <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Profile</a>
+            <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</a>
+            <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <div class="container">
-    <div class="welcome" id="welcomeMessage"></div>
-    <div id="moduleContainer" class="module-grid">
-      <!-- Modules will be injected here -->
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+      <input type="text" id="searchBox" placeholder="Search modules..." class="w-full md:w-1/2 px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring dark:bg-gray-800 dark:border-gray-600" />
+      
+      <!-- Recent Modules -->
+      <div class="bg-white dark:bg-gray-800 p-4 rounded shadow-md w-full md:w-1/2">
+        <h3 class="text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Recent Activity</h3>
+        <ul id="recentActivity" class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <!-- Recent modules will appear here -->
+        </ul>
+      </div>
     </div>
-  </div>
 
+    <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">Available Modules</h2>
+    <div id="modulesContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Modules injected here -->
+    </div>
+  </main>
+
+  <!-- Scripts -->
   <script>
-    const MODULES = {
-      "Admission Section": { roles: ["student", "faculty", "parent"], link: "Admission Section.html" },
-      "Alumni Management": { roles: ["faculty", "alumni"], link: "Alumni Management.html" },
-      "Attendance Management": { roles: ["student", "faculty", "parent"], link: "Attendence management.html" },
-      "Canteen Management": { roles: ["student", "faculty"], link: "Canteen Management.html" },
-      "Event Management": { roles: ["student", "faculty", "parent", "alumni"], link: "Event Management.html" },
-      "Examination Management": { roles: ["student", "faculty", "parent"], link: "Examination Management.html" },
-      "Faculty Management": { roles: ["faculty"], link: "Faculty Management.html" },
-      "Grading Section": { roles: ["student", "faculty", "parent"], link: "Grading Section.html" },
-      "Hostel Management": { roles: ["student", "faculty"], link: "Hostel Management.html" },
-      "ID Card & Certificate": { roles: ["student", "faculty"], link: "Id card & Certificate.html" },
-      "Internship & Placement": { roles: ["student", "faculty", "alumni"], link: "Intership & Placement.html" },
-      "Library Management": { roles: ["student", "faculty"], link: "Library Management.html" },
-      "Marksheet Section": { roles: ["student", "faculty", "parent"], link: "Marksheet Section.html" },
-      "Mass SMS System": { roles: ["faculty"], link: "Mass SMS System.html" },
-      "Payment Section": { roles: ["student", "faculty", "parent"], link: "Payment Section.html" },
-      "Result Processing": { roles: ["student", "faculty", "parent"], link: "Result Processing.html" },
-      "Scholarship Management": { roles: ["student", "faculty"], link: "Scholarship Management.html" },
-      "Student Fees Management": { roles: ["student", "faculty", "parent"], link: "Student Fees Management.html" },
-      "Time Table Section": { roles: ["student", "faculty", "parent"], link: "Time Table Section.html" },
-      "Transportation Management": { roles: ["student", "faculty", "parent"], link: "Transportation Management.html" }
-    };
+    const modules = [
+      { title: "Admission Section", roles: ["student", "faculty", "parent"], href: "Admission Section.html", description: "Manage student admissions." },
+      { title: "Alumni Management", roles: ["faculty", "alumni"], href: "Alumni Management.html", description: "Connect with alumni members." },
+      { title: "Attendance Management", roles: ["student", "faculty", "parent"], href: "Attendence management.html", description: "Track and monitor attendance." },
+      { title: "Canteen Management", roles: ["student", "faculty"], href: "Canteen Management.html", description: "Manage canteen services and menus." },
+      { title: "Event Management", roles: ["student", "faculty", "parent", "alumni"], href: "Event Management.html", description: "Plan and participate in events." },
+      { title: "Examination Management", roles: ["student", "faculty", "parent"], href: "Examination Management.html", description: "Oversee exams and performance." },
+      { title: "Faculty Management", roles: ["faculty"], href: "Faculty Management.html", description: "Manage faculty profiles and duties." },
+      { title: "Grading Section", roles: ["student", "faculty", "parent"], href: "Grading Section.html", description: "View and assign grades." },
+      { title: "Hostel Management", roles: ["student", "faculty"], href: "Hostel Management.html", description: "Handle hostel room assignments." },
+      { title: "ID Card & Certificate", roles: ["student", "faculty"], href: "Id card & Certificate.html", description: "Generate ID cards and certificates." },
+      { title: "Internship & Placement", roles: ["student", "faculty", "alumni"], href: "Intership & Placement.html", description: "Manage internships and jobs." },
+      { title: "Library Management", roles: ["student", "faculty"], href: "Library Management.html", description: "Access and manage library books." },
+      { title: "Marksheet Section", roles: ["student", "faculty", "parent"], href: "Marksheet Section.html", description: "View and issue marksheets." },
+      { title: "Mass SMS System", roles: ["faculty"], href: "Mass SMS System.html", description: "Send bulk SMS alerts." },
+      { title: "Payment Section", roles: ["student", "faculty", "parent"], href: "Payment Section.html", description: "Handle fee and tuition payments." },
+      { title: "Result Processing", roles: ["student", "faculty", "parent"], href: "Result Processing.html", description: "Process academic results." },
+      { title: "Scholarship Management", roles: ["student", "faculty"], href: "Scholarship Management.html", description: "Manage scholarships and applications." },
+      { title: "Student Fees Management", roles: ["student", "faculty", "parent"], href: "Student Fees Management.html", description: "Manage student fee records." },
+      { title: "Time Table Section", roles: ["student", "faculty", "parent"], href: "Time Table Section.html", description: "View class schedules." },
+      { title: "Transportation Management", roles: ["student", "faculty", "parent"], href: "Transportation Management.html", description: "Manage school transport logistics." }
+    ];
 
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    const modulesContainer = document.getElementById("modulesContainer");
+    const searchBox = document.getElementById("searchBox");
+    const themeToggle = document.getElementById("themeToggle");
+
     if (!loggedInUser || !loggedInUser.role) {
-      alert("Unauthorized. Please login.");
-      window.location.href = "Login.html";
+      alert("Unauthorized access. Redirecting to login.");
+      window.location.href = "login.html";
     }
 
-    const moduleContainer = document.getElementById("moduleContainer");
-    const welcomeMessage = document.getElementById("welcomeMessage");
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
+    document.getElementById("userInfo").textContent = `${greeting}, ${loggedInUser.fullName || 'User'} (${loggedInUser.role.toUpperCase()})`;
 
-    welcomeMessage.textContent = `Welcome, ${loggedInUser.fullName} (${loggedInUser.role.toUpperCase()})`;
+    function renderModules(filter = "") {
+      modulesContainer.innerHTML = "";
+      modules.forEach(mod => {
+        if (mod.roles.includes(loggedInUser.role) && mod.title.toLowerCase().includes(filter.toLowerCase())) {
+          const card = document.createElement("a");
+          card.href = mod.href;
+          card.className = "animate-fadeIn block p-5 bg-white dark:bg-gray-800 rounded-xl shadow hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition";
 
-    Object.entries(MODULES).forEach(([moduleName, config]) => {
-      if (config.roles.includes(loggedInUser.role)) {
-        const moduleLink = document.createElement("a");
-        moduleLink.className = "module";
-        moduleLink.href = config.link;
-        moduleLink.textContent = moduleName;
-        moduleContainer.appendChild(moduleLink);
+          card.innerHTML = `
+            <h3 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+              <svg class='w-5 h-5' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M5 13l4 4L19 7' /></svg>
+              ${mod.title}
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">${mod.description}</p>
+          `;
+
+          card.addEventListener("click", () => {
+            let recent = JSON.parse(localStorage.getItem('recentModules') || '[]');
+            if (!recent.includes(mod.title)) {
+              recent.unshift(mod.title);
+              if (recent.length > 5) recent = recent.slice(0, 5);
+              localStorage.setItem('recentModules', JSON.stringify(recent));
+            }
+          });
+
+          modulesContainer.appendChild(card);
+        }
+      });
+    }
+
+    function renderRecentActivity() {
+      const list = document.getElementById("recentActivity");
+      list.innerHTML = "";
+      const recent = JSON.parse(localStorage.getItem('recentModules') || '[]');
+      if (recent.length === 0) {
+        list.innerHTML = "<li class='text-gray-400'>No recent activity.</li>";
+      } else {
+        recent.forEach(title => {
+          list.innerHTML += `<li>• ${title}</li>`;
+        });
       }
+    }
+
+    searchBox.addEventListener("input", (e) => renderModules(e.target.value));
+
+    themeToggle.addEventListener("change", () => {
+      const isDark = themeToggle.checked;
+      document.body.classList.toggle("dark", isDark);
+      localStorage.setItem("theme", isDark ? "dark" : "light");
     });
 
-    function logout() {
-      localStorage.removeItem("loggedInUser");
-      window.location.href = "Login.html";
-    }
+    const preferredTheme = localStorage.getItem("theme") || (window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light");
+    document.body.classList.toggle("dark", preferredTheme === "dark");
+    themeToggle.checked = preferredTheme === "dark";
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+
+    renderModules();
+    renderRecentActivity();
+    feather.replace();
   </script>
 </body>
 </html>
