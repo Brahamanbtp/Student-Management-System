@@ -5,111 +5,331 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Canteen Management</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
+    body { font-family: 'Inter', sans-serif; transition: background 0.3s ease; }
+    .hidden { display: none; }
+    .toast {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background-color: #4ade80;
+      color: #fff;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      z-index: 50;
+      animation: fadein 0.5s ease-in-out;
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-6">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-    <h2 class="text-2xl font-bold text-green-700 mb-6">Canteen Management</h2>
+<body class="bg-gray-100 dark:bg-gray-800 min-h-screen p-6 text-gray-900 dark:text-gray-100">
+  <div class="max-w-5xl mx-auto bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg relative">
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-bold text-green-700 dark:text-green-400 mb-4">Canteen Management</h2>
+      <div class="flex items-center gap-3">
+        <span id="roleDisplay" class="text-sm text-gray-500 dark:text-gray-400"></span>
+        <button id="darkToggleBtn" class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">🌓 Toggle Dark</button>
+      </div>
+    </div>
 
     <!-- Form -->
     <form id="canteen-form" class="space-y-4 mb-6">
       <div>
-        <label for="item" class="block text-sm font-medium text-gray-700">Item</label>
-        <input type="text" id="item" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" placeholder="Enter item name" />
+        <label for="item" class="block text-sm font-medium">Item</label>
+        <input type="text" id="item" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-black" placeholder="Enter item name" />
       </div>
       <div>
-        <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
-        <input type="number" id="price" required min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" placeholder="Enter item price" />
+        <label for="price" class="block text-sm font-medium">Price</label>
+        <input type="number" id="price" required min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-black" placeholder="Enter item price" />
+      </div>
+      <div>
+        <label for="category" class="block text-sm font-medium">Category</label>
+        <select id="category" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-black">
+          <option>Snacks</option>
+          <option>Drinks</option>
+          <option>Meals</option>
+          <option>Others</option>
+        </select>
       </div>
       <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add Item</button>
     </form>
 
     <!-- Controls -->
     <div class="flex flex-col sm:flex-row sm:justify-between mb-4 gap-2">
-      <input type="text" id="searchInput" placeholder="Search items..." class="border border-gray-300 p-2 rounded w-full sm:w-1/2" />
-      <button onclick="exportCSV()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Export as CSV</button>
+      <input type="text" id="searchInput" placeholder="Search items..." class="border border-gray-300 p-2 rounded w-full sm:w-1/2 text-black" />
+      <select id="categoryFilter" class="border border-gray-300 p-2 rounded w-full sm:w-1/4 text-black">
+        <option value="">All Categories</option>
+        <option value="Snacks">Snacks</option>
+        <option value="Drinks">Drinks</option>
+        <option value="Meals">Meals</option>
+        <option value="Others">Others</option>
+      </select>
     </div>
 
+    <!-- Actions -->
+    <div class="flex flex-wrap gap-3 mb-4">
+      <button onclick="exportCSV()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Export CSV</button>
+      <button onclick="exportPDF()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Export PDF</button>
+      <button onclick="toggleChartType()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Toggle Chart</button>
+      <label class="bg-yellow-500 hover:bg-yellow-600 cursor-pointer px-4 py-2 rounded text-white">
+        Import CSV
+        <input type="file" accept=".csv" onchange="importCSV(event)" class="hidden" />
+      </label>
+    </div>
+
+    <div id="summary" class="mb-2 text-sm text-gray-700 dark:text-gray-300"></div>
+    <div id="analytics" class="mb-4 text-sm text-blue-700 dark:text-blue-300"></div>
+
     <!-- Table -->
-    <div class="overflow-x-auto">
-      <table id="canteen-menu" class="min-w-full bg-white border border-gray-200 rounded-lg">
-        <thead class="bg-gray-100">
+    <div class="overflow-x-auto mb-4">
+      <table id="canteen-menu" class="min-w-full bg-white dark:bg-gray-800 border border-gray-200 rounded-lg">
+        <thead class="bg-gray-100 dark:bg-gray-700">
           <tr>
             <th class="px-4 py-2 text-left">Item</th>
             <th class="px-4 py-2 text-left">Price</th>
-            <th class="px-4 py-2 text-left">Action</th>
+            <th class="px-4 py-2 text-left">Category</th>
+            <th class="px-4 py-2 text-left">Added On</th>
+            <th class="px-4 py-2 text-left">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
-          <!-- Rows dynamically added -->
-        </tbody>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-600"></tbody>
       </table>
     </div>
+
+    <!-- Chart -->
+    <div class="mb-4">
+      <canvas id="priceChart" height="100"></canvas>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
   </div>
 
   <script>
     const form = document.getElementById("canteen-form");
     const menuTableBody = document.querySelector("#canteen-menu tbody");
     const searchInput = document.getElementById("searchInput");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const summary = document.getElementById("summary");
+    const analytics = document.getElementById("analytics");
+    const ctx = document.getElementById("priceChart").getContext("2d");
+    const toastEl = document.getElementById("toast");
+    const roleDisplay = document.getElementById("roleDisplay");
+    const darkToggleBtn = document.getElementById("darkToggleBtn");
 
+    let chartType = "bar";
     let menu = [];
 
-    form.addEventListener("submit", function (e) {
+    const role = localStorage.getItem("role");
+    roleDisplay.innerText = role ? `Logged in as: ${role}` : "";
+
+    const hasAccess = role === "Student" || role === "Faculty";
+    if (!hasAccess) {
+      form.classList.add("hidden");
+      showToast("Access Denied: Only available to Students and Faculty", "#f87171");
+    }
+
+    function showToast(message, bg = "#4ade80") {
+      toastEl.textContent = message;
+      toastEl.style.backgroundColor = bg;
+      toastEl.classList.remove("hidden");
+      setTimeout(() => toastEl.classList.add("hidden"), 3000);
+    }
+
+    function applyDarkModeFromStorage() {
+      const mode = localStorage.getItem("darkMode");
+      if (mode === "enabled") document.documentElement.classList.add("dark");
+    }
+
+    function toggleDarkMode() {
+      document.documentElement.classList.toggle("dark");
+      const isDark = document.documentElement.classList.contains("dark");
+      localStorage.setItem("darkMode", isDark ? "enabled" : "disabled");
+    }
+
+    darkToggleBtn.addEventListener("click", toggleDarkMode);
+    applyDarkModeFromStorage();
+
+    function saveMenu() {
+      localStorage.setItem("canteenMenu", JSON.stringify(menu));
+    }
+
+    function loadMenu() {
+      const saved = localStorage.getItem("canteenMenu");
+      if (saved) {
+        menu = JSON.parse(saved);
+        renderMenu();
+      }
+    }
+
+    form?.addEventListener("submit", function (e) {
       e.preventDefault();
       const item = document.getElementById("item").value.trim();
-      const price = document.getElementById("price").value.trim();
-      if (!item || !price) return;
+      const price = parseFloat(document.getElementById("price").value.trim());
+      const category = document.getElementById("category").value;
+      const date = new Date().toISOString();
+      if (!item || isNaN(price)) return;
 
-      menu.push({ item, price });
+      menu.push({ item, price, category, date });
+      saveMenu();
       renderMenu();
       form.reset();
+      showToast("Item added!");
     });
 
     function renderMenu(filtered = menu) {
       menuTableBody.innerHTML = "";
       filtered.forEach((entry, index) => {
-        const row = `
+        menuTableBody.insertAdjacentHTML("beforeend", `
           <tr>
             <td class="px-4 py-2">${entry.item}</td>
-            <td class="px-4 py-2">₹${parseFloat(entry.price).toFixed(2)}</td>
+            <td class="px-4 py-2">₹${entry.price.toFixed(2)}</td>
+            <td class="px-4 py-2">${entry.category}</td>
+            <td class="px-4 py-2">${new Date(entry.date).toLocaleDateString()}</td>
             <td class="px-4 py-2">
-              <button onclick="deleteItem(${index})" class="text-red-600 hover:underline">Delete</button>
+              ${hasAccess ? `
+                <button onclick="editItem(${index})" class="text-blue-600 hover:underline mr-2">Edit</button>
+                <button onclick="deleteItem(${index})" class="text-red-600 hover:underline">Delete</button>` : "-"}
             </td>
-          </tr>
-        `;
-        menuTableBody.insertAdjacentHTML("beforeend", row);
+          </tr>`);
       });
+
+      updateSummary(filtered);
+      updateAnalytics(filtered);
+      drawChart(filtered);
+    }
+
+    function editItem(index) {
+      const entry = menu[index];
+      const newItem = prompt("Edit Item Name:", entry.item);
+      const newPrice = parseFloat(prompt("Edit Price:", entry.price));
+      const newCategory = prompt("Edit Category:", entry.category);
+      if (newItem && !isNaN(newPrice) && newCategory) {
+        menu[index] = { ...entry, item: newItem.trim(), price: newPrice, category: newCategory };
+        saveMenu();
+        renderMenu();
+        showToast("Item updated!");
+      }
     }
 
     function deleteItem(index) {
       if (confirm("Are you sure you want to delete this item?")) {
         menu.splice(index, 1);
+        saveMenu();
         renderMenu();
+        showToast("Item deleted!", "#f87171");
       }
     }
 
-    searchInput.addEventListener("input", function () {
-      const term = this.value.toLowerCase();
-      const filtered = menu.filter(m => m.item.toLowerCase().includes(term));
-      renderMenu(filtered);
-    });
+    function updateSummary(data) {
+      const total = data.reduce((sum, i) => sum + i.price, 0);
+      const categoryCount = data.reduce((acc, i) => {
+        acc[i.category] = (acc[i.category] || 0) + 1;
+        return acc;
+      }, {});
+      const categories = Object.entries(categoryCount).map(([k, v]) => `${k}: ${v}`).join(" | ");
+      summary.innerText = `Total: ${data.length} items | Value: ₹${total.toFixed(2)} | ${categories}`;
+    }
+
+    function updateAnalytics(data) {
+      const monthly = {};
+      data.forEach(({ date }) => {
+        const m = new Date(date).toLocaleString('default', { month: 'short', year: 'numeric' });
+        monthly[m] = (monthly[m] || 0) + 1;
+      });
+      analytics.innerText = `Monthly Additions → ${Object.entries(monthly).map(([m, c]) => `${m}: ${c}`).join(" | ")}`;
+    }
+
+    function drawChart(data) {
+      const top = [...data].sort((a, b) => b.price - a.price).slice(0, 5);
+      const labels = top.map(i => i.item);
+      const prices = top.map(i => i.price);
+
+      if (window.chartInstance) window.chartInstance.destroy();
+      window.chartInstance = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels,
+          datasets: [{
+            label: 'Top 5 Expensive Items',
+            data: prices,
+            backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: chartType === 'bar' ? { y: { beginAtZero: true } } : {}
+        }
+      });
+    }
+
+    function toggleChartType() {
+      chartType = chartType === "bar" ? "pie" : "bar";
+      renderMenu();
+    }
 
     function exportCSV() {
-      if (menu.length === 0) return alert("No data to export.");
-      const rows = [["Item", "Price"], ...menu.map(item => [item.item, item.price])];
-      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-
-      const link = document.createElement("a");
-      link.setAttribute("href", encodeURI(csvContent));
-      link.setAttribute("download", "canteen_menu.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (menu.length === 0) return showToast("No data to export", "#f87171");
+      const rows = [["Item", "Price", "Category", "Date"], ...menu.map(i => [i.item, i.price, i.category, i.date])];
+      const blob = new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "canteen_menu.csv";
+      a.click();
+      URL.revokeObjectURL(url);
     }
+
+    function exportPDF() {
+      if (menu.length === 0) return showToast("No data to export", "#f87171");
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(12);
+      doc.text("Canteen Menu", 10, 10);
+      menu.forEach((item, i) => {
+        doc.text(`${i + 1}. ${item.item} - ₹${item.price.toFixed(2)} (${item.category})`, 10, 20 + i * 10);
+      });
+      doc.save("canteen_menu.pdf");
+    }
+
+    function importCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const lines = event.target.result.split("\n").slice(1);
+        lines.forEach(line => {
+          const [item, price, category, date] = line.split(",");
+          if (item && !isNaN(parseFloat(price))) {
+            menu.push({ item: item.trim(), price: parseFloat(price), category: category.trim(), date: date || new Date().toISOString() });
+          }
+        });
+        saveMenu();
+        renderMenu();
+        showToast("CSV imported!");
+      };
+      reader.readAsText(file);
+    }
+
+    searchInput.addEventListener("input", filterMenu);
+    categoryFilter.addEventListener("change", filterMenu);
+
+    function filterMenu() {
+      const term = searchInput.value.toLowerCase();
+      const cat = categoryFilter.value;
+      const filtered = menu.filter(({ item, category }) =>
+        item.toLowerCase().includes(term) && (!cat || category === cat));
+      renderMenu(filtered);
+    }
+
+    // Initial Load
+    loadMenu();
   </script>
 </body>
 </html>
