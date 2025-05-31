@@ -5,27 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Event Management</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    :root {
+      --bg-light: #f4f6f8;
+      --bg-dark: #121212;
+      --text-light: #000;
+      --text-dark: #f5f5f5;
+      --card-light: white;
+      --card-dark: #1e1e1e;
+      --primary: #3949ab;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #f4f6f8;
       margin: 0;
       padding: 20px;
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      transition: all 0.3s ease;
+    }
+
+    body.dark {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1000px;
       margin: auto;
-      background: white;
+      background: var(--card-light);
       border-radius: 10px;
       padding: 30px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
+    body.dark .container {
+      background: var(--card-dark);
+    }
+
     h2 {
       text-align: center;
-      color: #3949ab;
-      margin-bottom: 1.5rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      margin-bottom: 1rem;
     }
 
     label {
@@ -34,26 +64,30 @@
       margin-top: 10px;
     }
 
-    input[type="text"],
-    input[type="date"],
-    textarea {
+    input, textarea, select {
       width: 100%;
       padding: 10px;
       margin-top: 5px;
       border-radius: 6px;
       border: 1px solid #ccc;
       margin-bottom: 15px;
+      background: white;
+    }
+
+    body.dark input, body.dark textarea, body.dark select {
+      background: #333;
+      color: white;
+      border: 1px solid #666;
     }
 
     button {
-      background-color: #3949ab;
+      background-color: var(--primary);
       color: white;
       padding: 10px 20px;
       border: none;
       border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 10px;
     }
 
     button:hover {
@@ -63,18 +97,21 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 2rem;
+      margin-top: 1rem;
     }
 
     th, td {
       padding: 12px;
       border: 1px solid #ddd;
-      text-align: left;
     }
 
     th {
       background-color: #e8eaf6;
-      color: #333;
+    }
+
+    body.dark th {
+      background-color: #2c2c2c;
+      color: white;
     }
 
     .hidden {
@@ -83,8 +120,35 @@
 
     .role-message {
       font-size: 1rem;
-      margin-bottom: 20px;
-      color: #444;
+      margin-bottom: 10px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #43a047;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 5px;
+      display: none;
+    }
+
+    img.thumbnail {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .toolbar {
+        flex-direction: column;
+      }
+
+      td, th {
+        font-size: 14px;
+      }
     }
   </style>
 </head>
@@ -93,15 +157,36 @@
     <h2>Event Management</h2>
     <p class="role-message" id="roleInfo"></p>
 
+    <div class="toolbar">
+      <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+      <input type="text" id="searchInput" placeholder="Search events..." oninput="renderEvents()">
+      <select id="filterDate" onchange="renderEvents()">
+        <option value="all">All</option>
+        <option value="upcoming">Upcoming</option>
+        <option value="past">Past</option>
+      </select>
+      <select id="sortOrder" onchange="renderEvents()">
+        <option value="desc">Newest First</option>
+        <option value="asc">Oldest First</option>
+      </select>
+      <button onclick="exportCSV()">Export CSV</button>
+    </div>
+
     <form id="event-form" class="hidden">
       <label for="event-name">Event Name:</label>
-      <input type="text" id="event-name" placeholder="Enter event name" required>
+      <input type="text" id="event-name" required>
 
       <label for="event-date">Event Date:</label>
       <input type="date" id="event-date" required>
 
       <label for="event-description">Description:</label>
-      <textarea id="event-description" rows="4" placeholder="Enter event description" required></textarea>
+      <textarea id="event-description" rows="3" required></textarea>
+
+      <label for="event-link">External Link (optional):</label>
+      <input type="text" id="event-link">
+
+      <label for="event-image">Image URL (optional):</label>
+      <input type="text" id="event-image">
 
       <button type="submit">Add Event</button>
     </form>
@@ -109,68 +194,165 @@
     <table id="event-table">
       <thead>
         <tr>
-          <th>Event Name</th>
+          <th>Image</th>
+          <th>Name</th>
           <th>Date</th>
           <th>Description</th>
+          <th>Link</th>
+          <th>By</th>
+          <th>Action</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Dynamic event rows go here -->
-      </tbody>
+      <tbody></tbody>
     </table>
+
+    <canvas id="eventChart" height="100"></canvas>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script>
+    const roleInfo = document.getElementById("roleInfo");
+    const form = document.getElementById("event-form");
+    const tableBody = document.querySelector("#event-table tbody");
+    const toast = document.getElementById("toast");
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
     const allowedRoles = ["student", "faculty", "parent", "alumni"];
-    const eventForm = document.getElementById("event-form");
-    const tableBody = document.querySelector("#event-table tbody");
-    const roleInfo = document.getElementById("roleInfo");
+    let events = JSON.parse(localStorage.getItem("events")) || [];
 
     if (!loggedInUser || !allowedRoles.includes(loggedInUser.role)) {
-      alert("Access denied or not logged in.");
-      window.location.href = "Login.html";
+      alert("Access denied.");
+      location.href = "Login.html";
     } else {
       roleInfo.textContent = `Logged in as: ${loggedInUser.fullName} (${loggedInUser.role.toUpperCase()})`;
       if (loggedInUser.role === "faculty") {
-        eventForm.classList.remove("hidden");
+        form.classList.remove("hidden");
+        form.onsubmit = function (e) {
+          e.preventDefault();
+          const newEvent = {
+            id: Date.now(),
+            name: eventName.value,
+            date: eventDate.value,
+            description: eventDescription.value,
+            image: eventImage.value || "",
+            link: eventLink.value || "",
+            createdBy: loggedInUser.fullName
+          };
+          events.push(newEvent);
+          localStorage.setItem("events", JSON.stringify(events));
+          form.reset();
+          showToast("Event added!");
+          renderEvents();
+        };
       }
     }
 
-    const events = JSON.parse(localStorage.getItem("events")) || [];
-
     function renderEvents() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const filter = document.getElementById("filterDate").value;
+      const sortOrder = document.getElementById("sortOrder").value;
+      const now = new Date().toISOString().split("T")[0];
+
+      let filtered = events.filter(e =>
+        e.name.toLowerCase().includes(search) ||
+        e.description.toLowerCase().includes(search)
+      );
+
+      if (filter === "upcoming") {
+        filtered = filtered.filter(e => e.date >= now);
+      } else if (filter === "past") {
+        filtered = filtered.filter(e => e.date < now);
+      }
+
+      filtered.sort((a, b) => sortOrder === "asc"
+        ? new Date(a.date) - new Date(b.date)
+        : new Date(b.date) - new Date(a.date));
+
       tableBody.innerHTML = "";
-      events.forEach(event => {
+      filtered.forEach(event => {
         const row = document.createElement("tr");
         row.innerHTML = `
+          <td>${event.image ? `<img class="thumbnail" src="${event.image}">` : '-'}</td>
           <td>${event.name}</td>
           <td>${event.date}</td>
           <td>${event.description}</td>
+          <td>${event.link ? `<a href="${event.link}" target="_blank">View</a>` : '-'}</td>
+          <td>${event.createdBy}</td>
+          <td>
+            ${loggedInUser.role === "faculty" ? `
+              <button onclick="deleteEvent(${event.id})">Delete</button>
+            ` : ''}
+          </td>
         `;
         tableBody.appendChild(row);
       });
+
+      renderChart(filtered);
+    }
+
+    function deleteEvent(id) {
+      events = events.filter(e => e.id !== id);
+      localStorage.setItem("events", JSON.stringify(events));
+      renderEvents();
+      showToast("Event deleted!");
+    }
+
+    function exportCSV() {
+      let csv = "Name,Date,Description,Link,Created By\n";
+      events.forEach(e => {
+        csv += `"${e.name}","${e.date}","${e.description}","${e.link}","${e.createdBy}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "events.csv";
+      a.click();
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.style.display = "block";
+      setTimeout(() => toast.style.display = "none", 3000);
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+    }
+
+    function renderChart(data) {
+      const ctx = document.getElementById("eventChart").getContext("2d");
+      const counts = {};
+      data.forEach(e => {
+        const month = e.date.substring(0, 7);
+        counts[month] = (counts[month] || 0) + 1;
+      });
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+      if (window.chart) window.chart.destroy();
+      window.chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Events by Month',
+            data: values,
+            backgroundColor: '#3949ab'
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+    }
+
+    // Apply stored dark mode preference
+    if (localStorage.getItem("darkMode") === "true") {
+      document.body.classList.add("dark");
     }
 
     renderEvents();
-
-    if (loggedInUser.role === "faculty") {
-      eventForm.addEventListener("submit", function(e) {
-        e.preventDefault();
-        const name = document.getElementById("event-name").value.trim();
-        const date = document.getElementById("event-date").value;
-        const description = document.getElementById("event-description").value.trim();
-
-        if (!name || !date || !description) return;
-
-        const newEvent = { name, date, description };
-        events.push(newEvent);
-        localStorage.setItem("events", JSON.stringify(events));
-        renderEvents();
-
-        eventForm.reset();
-      });
-    }
   </script>
 </body>
 </html>
