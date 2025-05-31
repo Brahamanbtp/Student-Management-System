@@ -1,122 +1,98 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admission Section</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    .modal {
-      background: rgba(0, 0, 0, 0.6);
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-6">
-  <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 relative">
-    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Admission Section</h2>
+<body class="bg-gray-50 text-gray-900">
 
-    <form id="admission-form" class="space-y-4 hidden">
-      <div>
-        <label for="student-name" class="block text-sm font-medium text-gray-700">Student Name</label>
-        <input type="text" id="student-name" name="student-name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
-      </div>
-      <div>
-        <label for="admission-type" class="block text-sm font-medium text-gray-700">Admission Type</label>
-        <select id="admission-type" name="admission-type" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-          <option value="online">Online</option>
-          <option value="offline">Offline</option>
-        </select>
-      </div>
-      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">Submit Admission</button>
-    </form>
+  <div class="max-w-6xl mx-auto p-6 space-y-6">
+    <h1 class="text-3xl font-bold text-center">Admission Section</h1>
 
-    <div class="mt-8">
-      <input type="text" id="search-input" placeholder="Search..." class="w-full p-2 border border-gray-300 rounded mb-4" />
-      <div class="flex justify-between mb-4">
-        <button id="clear-btn" onclick="clearAllRecords()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 hidden">Clear All</button>
-        <button id="export-btn" onclick="exportCSV()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 hidden">Export CSV</button>
+    <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+      <input id="searchInput" type="text" placeholder="Search by name or type..." class="border border-gray-300 rounded p-2 w-full sm:w-1/2">
+      <div class="space-x-2">
+        <button onclick="exportCSV()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Export CSV</button>
+        <button onclick="exportPDF()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Export PDF</button>
+        <button onclick="renderCharts()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Show Charts</button>
       </div>
-      <div class="overflow-x-auto">
-        <table id="admission-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="px-4 py-2 text-left">#</th>
-              <th class="px-4 py-2 text-left">Student Name</th>
-              <th class="px-4 py-2 text-left">Admission Type</th>
-              <th class="px-4 py-2 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200"></tbody>
-        </table>
-      </div>
-      <div class="mt-4 flex justify-between items-center">
-        <div id="pagination" class="flex gap-2"></div>
-      </div>
+    </div>
+
+    <div class="overflow-x-auto rounded shadow bg-white">
+      <table class="w-full table-auto border-collapse">
+        <thead class="bg-indigo-600 text-white">
+          <tr>
+            <th class="px-4 py-2 text-left">#</th>
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Type</th>
+            <th class="px-4 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="flex justify-center space-x-2" id="pagination"></div>
+
+    <div class="text-right">
+      <button onclick="addAdmission()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">+ Add Admission</button>
+    </div>
+
+    <!-- Charts Section -->
+    <div id="chartsSection" class="hidden space-y-4">
+      <canvas id="pieChart" height="100"></canvas>
+      <canvas id="barChart" height="100"></canvas>
     </div>
   </div>
 
-  <!-- Modal -->
-  <div id="modal" class="modal fixed inset-0 hidden items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-      <h3 class="text-lg font-semibold mb-2">Student Details</h3>
-      <p id="modal-content" class="text-gray-700 mb-4"></p>
-      <button onclick="closeModal()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Close</button>
+  <!-- Modal (for viewing/editing) -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
+      <h2 id="modalTitle" class="text-xl font-bold"></h2>
+      <input id="nameInput" type="text" placeholder="Name" class="w-full border p-2 rounded">
+      <select id="typeInput" class="w-full border p-2 rounded">
+        <option value="online">Online</option>
+        <option value="offline">Offline</option>
+      </select>
+      <div class="text-right space-x-2">
+        <button onclick="closeModal()" class="px-4 py-2 border rounded">Cancel</button>
+        <button id="modalSaveBtn" onclick="saveModal()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Save</button>
+      </div>
     </div>
   </div>
 
   <script>
-    const user = JSON.parse(localStorage.getItem("loggedInUser"));
-    if (!user || !user.role) {
-      alert("Unauthorized access. Please log in.");
-      window.location.href = "Login.html";
-    }
-
-    const role = user.role.toLowerCase();
-    const form = document.getElementById("admission-form");
-    const tableBody = document.querySelector("#admission-table tbody");
-    const searchInput = document.getElementById("search-input");
+    const role = localStorage.getItem("role") || "student";
+    const user = { username: "student1" }; // Replace with actual logged-in user
+    let admissions = JSON.parse(localStorage.getItem("admissions") || "[]");
+    let currentPage = 1, pageSize = 5;
+    let editingIndex = null;
+    const tableBody = document.getElementById("tableBody");
     const pagination = document.getElementById("pagination");
-    const clearBtn = document.getElementById("clear-btn");
-    const exportBtn = document.getElementById("export-btn");
-    const modal = document.getElementById("modal");
-    const modalContent = document.getElementById("modal-content");
+    const searchInput = document.getElementById("searchInput");
+    const chartsSection = document.getElementById("chartsSection");
+    const pieChartCtx = document.getElementById("pieChart");
+    const barChartCtx = document.getElementById("barChart");
 
-    let admissions = JSON.parse(localStorage.getItem("admissions")) || [];
-    let currentPage = 1;
-    const pageSize = 5;
-
-    if (role === "student" || role === "faculty" || role === "parent") {
-      form.classList.remove("hidden");
-    }
-
-    if (role === "faculty") {
-      clearBtn.classList.remove("hidden");
-      exportBtn.classList.remove("hidden");
-    }
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const name = document.getElementById("student-name").value.trim();
-      const type = document.getElementById("admission-type").value;
-      if (!name) return alert("Please enter student name.");
-      admissions.push({ name, type, submittedBy: user.username, timestamp: new Date().toLocaleString() });
-      localStorage.setItem("admissions", JSON.stringify(admissions));
-      currentPage = Math.ceil(admissions.length / pageSize);
-      renderTable();
-      form.reset();
-    });
+    let pieChart, barChart;
 
     function getFilteredAdmissions() {
-      if (role === "student") return admissions.filter(r => r.submittedBy === user.username);
-      return admissions;
+      return admissions.filter(r => {
+        if (role === "parent") return true;
+        if (role === "student") return r.submittedBy === user.username;
+        return true;
+      });
     }
 
     function renderTable() {
-      const data = getFilteredAdmissions();
+      const data = applySearchFilter(getFilteredAdmissions());
       const start = (currentPage - 1) * pageSize;
       const paginated = data.slice(start, start + pageSize);
       tableBody.innerHTML = "";
@@ -131,12 +107,12 @@
             <td class="px-4 py-2 space-x-2">
               <button onclick="viewDetails(${globalIndex})" class="text-indigo-600 hover:underline">View</button>
               ${
-                role === "faculty" ?
-                `<button onclick="editRecord(${globalIndex})" class="text-blue-600 hover:underline">Edit</button>
-                 <button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>` :
-                (role === "student" && record.submittedBy === user.username ?
-                `<button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>` :
-                `<span class="text-gray-400">View Only</span>`)
+                role === "faculty"
+                  ? `<button onclick="editRecord(${globalIndex})" class="text-blue-600 hover:underline">Edit</button>
+                     <button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>`
+                  : (role === "student" && record.submittedBy === user.username
+                      ? `<button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>`
+                      : `<span class="text-gray-400">View Only</span>`)
               }
             </td>
           </tr>`;
@@ -157,109 +133,133 @@
       }
     }
 
-    function editRecord(index) {
+    function applySearchFilter(data) {
+      const term = searchInput.value.toLowerCase().trim();
+      return data.filter(r =>
+        r.name.toLowerCase().includes(term) || r.type.toLowerCase().includes(term)
+      );
+    }
+
+    function addAdmission() {
+      editingIndex = null;
+      openModal("Add New Admission");
+    }
+
+    function viewDetails(index) {
+      editingIndex = null;
       const record = admissions[index];
-      const newName = prompt("Edit Student Name:", record.name);
-      const newType = prompt("Edit Admission Type (online/offline):", record.type);
-      if (newName && newType) {
-        admissions[index] = { ...record, name: newName.trim(), type: newType.trim().toLowerCase() };
-        localStorage.setItem("admissions", JSON.stringify(admissions));
-        renderTable();
-      }
+      document.getElementById("nameInput").value = record.name;
+      document.getElementById("typeInput").value = record.type;
+      openModal("Admission Details", true);
+    }
+
+    function editRecord(index) {
+      editingIndex = index;
+      const record = admissions[index];
+      document.getElementById("nameInput").value = record.name;
+      document.getElementById("typeInput").value = record.type;
+      openModal("Edit Admission");
     }
 
     function deleteRecord(index) {
-      const record = admissions[index];
-      if (role === "student" && record.submittedBy !== user.username) return;
-
-      if (confirm("Are you sure you want to delete this record?")) {
+      if (confirm("Delete this record?")) {
         admissions.splice(index, 1);
         localStorage.setItem("admissions", JSON.stringify(admissions));
         renderTable();
       }
     }
 
-    function clearAllRecords() {
-      if (confirm("Clear all records?")) {
-        admissions = [];
-        localStorage.setItem("admissions", JSON.stringify([]));
-        renderTable();
-      }
-    }
-
-    function exportCSV() {
-      let data = getFilteredAdmissions();
-      if (data.length === 0) return alert("No records to export.");
-
-      let csv = "Student Name,Admission Type,Submitted By,Date/Time\n";
-      data.forEach(r => {
-        csv += `"${r.name}","${r.type}","${r.submittedBy}","${r.timestamp}"\n`;
-      });
-
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "admissions.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function viewDetails(index) {
-      const r = admissions[index];
-      modalContent.innerHTML = `
-        <strong>Name:</strong> ${r.name}<br>
-        <strong>Admission Type:</strong> ${r.type}<br>
-        <strong>Submitted By:</strong> ${r.submittedBy}<br>
-        <strong>Date/Time:</strong> ${r.timestamp}
-      `;
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
+    function openModal(title, readOnly = false) {
+      document.getElementById("modalTitle").innerText = title;
+      document.getElementById("modal").classList.remove("hidden");
+      document.getElementById("nameInput").disabled = readOnly;
+      document.getElementById("typeInput").disabled = readOnly;
+      document.getElementById("modalSaveBtn").style.display = readOnly ? "none" : "inline-block";
     }
 
     function closeModal() {
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
+      document.getElementById("modal").classList.add("hidden");
+    }
+
+    function saveModal() {
+      const name = document.getElementById("nameInput").value.trim();
+      const type = document.getElementById("typeInput").value;
+      if (!name) return alert("Name is required.");
+
+      if (editingIndex !== null) {
+        admissions[editingIndex] = { name, type, submittedBy: user.username };
+      } else {
+        admissions.push({ name, type, submittedBy: user.username });
+      }
+
+      localStorage.setItem("admissions", JSON.stringify(admissions));
+      closeModal();
+      renderTable();
+    }
+
+    function renderCharts() {
+      chartsSection.classList.remove("hidden");
+
+      const data = applySearchFilter(getFilteredAdmissions());
+      const typeCounts = { online: 0, offline: 0 };
+      data.forEach(r => {
+        typeCounts[r.type] = (typeCounts[r.type] || 0) + 1;
+      });
+
+      if (pieChart) pieChart.destroy();
+      if (barChart) barChart.destroy();
+
+      pieChart = new Chart(pieChartCtx, {
+        type: 'pie',
+        data: {
+          labels: ['Online', 'Offline'],
+          datasets: [{
+            data: [typeCounts.online, typeCounts.offline],
+            backgroundColor: ['#4F46E5', '#22C55E']
+          }]
+        }
+      });
+
+      barChart = new Chart(barChartCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Online', 'Offline'],
+          datasets: [{
+            label: '# of Admissions',
+            data: [typeCounts.online, typeCounts.offline],
+            backgroundColor: ['#4F46E5', '#22C55E']
+          }]
+        }
+      });
+    }
+
+    function exportCSV() {
+      const data = applySearchFilter(getFilteredAdmissions());
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Admissions");
+      XLSX.writeFile(wb, "admissions.csv");
+    }
+
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Admission Records", 14, 16);
+      const data = applySearchFilter(getFilteredAdmissions()).map((r, i) => [i + 1, r.name, r.type]);
+      doc.autoTable({
+        head: [["#", "Name", "Type"]],
+        body: data,
+        startY: 20
+      });
+      doc.save("admissions.pdf");
     }
 
     searchInput.addEventListener("input", function () {
-      const term = this.value.toLowerCase().trim();
-      const filtered = getFilteredAdmissions().filter(r =>
-        r.name.toLowerCase().includes(term) || r.type.toLowerCase().includes(term)
-      );
       currentPage = 1;
-      renderFilteredTable(filtered);
+      renderTable();
     });
 
-    function renderFilteredTable(data) {
-      const start = (currentPage - 1) * pageSize;
-      const paginated = data.slice(start, start + pageSize);
-      tableBody.innerHTML = "";
-
-      paginated.forEach((record, index) => {
-        const globalIndex = admissions.indexOf(record);
-        tableBody.innerHTML += `
-          <tr>
-            <td class="px-4 py-2">${start + index + 1}</td>
-            <td class="px-4 py-2">${record.name}</td>
-            <td class="px-4 py-2">${record.type}</td>
-            <td class="px-4 py-2 space-x-2">
-              <button onclick="viewDetails(${globalIndex})" class="text-indigo-600 hover:underline">View</button>
-              ${
-                role === "faculty" ?
-                `<button onclick="editRecord(${globalIndex})" class="text-blue-600 hover:underline">Edit</button>
-                 <button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>` :
-                (role === "student" && record.submittedBy === user.username ?
-                `<button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>` :
-                `<span class="text-gray-400">View Only</span>`)
-              }
-            </td>
-          </tr>`;
-      });
-
-      renderPagination(data.length);
-    }
-
+    // Initial render
     renderTable();
   </script>
 </body>
