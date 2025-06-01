@@ -1,216 +1,549 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Grading Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Examination Grades Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow-md">
-    <h2 class="text-3xl font-bold mb-6 text-blue-700">Grading Management</h2>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
 
-    <!-- Message for unauthorized access -->
-    <div id="unauthorized-msg" class="text-red-600 text-lg mb-4 hidden">You do not have permission to modify grades.</div>
+  <header class="bg-blue-600 dark:bg-blue-800 p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Examination Grades Management</h1>
+    <div>
+      <label for="roleSelect" class="mr-2">User Role:</label>
+      <select id="roleSelect" class="rounded px-2 py-1 text-gray-900">
+        <option value="student">Student</option>
+        <option value="faculty" selected>Faculty</option>
+        <option value="admin">Admin</option>
+        <option value="guest">Guest</option>
+      </select>
+    </div>
+  </header>
 
-    <!-- Grading Form -->
-    <div id="grading-form-container" class="mb-6 hidden">
-      <form id="grading-form" class="space-y-4">
-        <input type="text" id="grade" placeholder="Grade (e.g., A)" class="w-full p-2 border rounded" required>
-        <input type="number" id="min-marks" placeholder="Minimum Marks" class="w-full p-2 border rounded" required>
-        <input type="number" id="max-marks" placeholder="Maximum Marks" class="w-full p-2 border rounded" required>
-        <div class="flex gap-3">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save Grade</button>
-          <button type="button" onclick="cancelEdit()" id="cancel-edit" class="hidden bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancel Edit</button>
+  <main class="container mx-auto flex-grow p-6 max-w-6xl">
+    <section aria-label="Add or Edit Grade Form" class="mb-6 bg-white dark:bg-gray-800 rounded shadow p-6">
+      <h2 class="text-lg font-semibold mb-4">Add / Edit Grade</h2>
+      <form id="gradeForm" class="space-y-4 max-w-md">
+        <div>
+          <label for="gradeName" class="block mb-1 font-medium">Grade Name</label>
+          <input type="text" id="gradeName" aria-describedby="gradeNameError" class="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100" />
+          <p id="gradeNameError" class="text-red-600 text-sm mt-1 hidden"></p>
+        </div>
+        <div>
+          <label for="minMarks" class="block mb-1 font-medium">Minimum Marks</label>
+          <input type="number" id="minMarks" min="0" max="100" aria-describedby="minMarksError" class="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100" />
+          <p id="minMarksError" class="text-red-600 text-sm mt-1 hidden"></p>
+        </div>
+        <div>
+          <label for="maxMarks" class="block mb-1 font-medium">Maximum Marks</label>
+          <input type="number" id="maxMarks" min="0" max="100" aria-describedby="maxMarksError" class="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100" />
+          <p id="maxMarksError" class="text-red-600 text-sm mt-1 hidden"></p>
+        </div>
+        <div class="space-x-2">
+          <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">Add Grade</button>
+          <button type="button" id="cancelEditBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold px-4 py-2 rounded hidden focus:outline-none focus:ring-2 focus:ring-gray-500">Cancel Edit</button>
         </div>
       </form>
-    </div>
+    </section>
 
-    <!-- Export Buttons -->
-    <div class="flex justify-end space-x-3 mb-4">
-      <button onclick="exportCSV()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Export CSV</button>
-      <button onclick="generatePDF()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Generate PDF</button>
-    </div>
+    <section aria-label="Grades Table and Controls" class="bg-white dark:bg-gray-800 rounded shadow p-6 mb-6">
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+        <div class="flex space-x-2 items-center">
+          <label for="searchInput" class="sr-only">Search Grades</label>
+          <input type="text" id="searchInput" placeholder="Search grades..." class="rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <button id="clearSearchBtn" aria-label="Clear search" class="px-3 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-gray-500">Clear</button>
+        </div>
+        <div class="flex space-x-2 items-center">
+          <label for="sortSelect" class="mr-2">Sort By:</label>
+          <select id="sortSelect" class="rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="grade_asc">Grade Name (A-Z)</option>
+            <option value="grade_desc">Grade Name (Z-A)</option>
+            <option value="min_asc">Min Marks (Low to High)</option>
+            <option value="min_desc">Min Marks (High to Low)</option>
+            <option value="max_asc">Max Marks (Low to High)</option>
+            <option value="max_desc">Max Marks (High to Low)</option>
+          </select>
+        </div>
+        <div class="flex space-x-2 items-center">
+          <button id="exportCSVBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">Export CSV</button>
+          <button id="exportPDFBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500">Export PDF</button>
+        </div>
+      </div>
 
-    <!-- Grading Table -->
-    <table class="w-full text-left border rounded border-gray-300 mb-6">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="p-2">Grade</th>
-          <th class="p-2">Min Marks</th>
-          <th class="p-2">Max Marks</th>
-          <th class="p-2" id="actions-header" class="hidden">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="grading-body" class="bg-white">
-        <!-- Dynamic rows -->
-      </tbody>
-    </table>
+      <div class="overflow-x-auto">
+        <table id="gradesTable" class="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+          <thead class="bg-blue-600 dark:bg-blue-800 text-white">
+            <tr>
+              <th class="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Grade</th>
+              <th class="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">Min Marks</th>
+              <th class="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">Max Marks</th>
+              <th class="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="gradesTableBody" class="bg-white dark:bg-gray-800"></tbody>
+        </table>
+      </div>
 
-    <div id="no-data" class="text-center text-gray-500 mb-6">No grades added yet.</div>
+      <div class="mt-4 flex justify-between items-center">
+        <button id="prevPageBtn" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500">Previous</button>
+        <span id="pageInfo" aria-live="polite">Page 1 of 1</span>
+        <button id="nextPageBtn" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500">Next</button>
+      </div>
+    </section>
 
-    <!-- Chart -->
-    <canvas id="gradingChart" class="w-full h-64"></canvas>
-  </div>
+    <section aria-label="Grades Distribution Chart" class="bg-white dark:bg-gray-800 rounded shadow p-6">
+      <h2 class="text-lg font-semibold mb-4">Grades Distribution Chart</h2>
+      <canvas id="gradesChart" aria-label="Bar chart showing minimum and maximum marks for each grade" role="img"></canvas>
+    </section>
+  </main>
+
+  <footer class="text-center p-4 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+    &copy; 2025 Examination System
+  </footer>
+
+  <div id="toast" class="fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-white font-semibold opacity-0 pointer-events-none transition-opacity duration-300"></div>
 
   <script>
-    const role = localStorage.getItem("role");
-    const grades = JSON.parse(localStorage.getItem("gradesData")) || [];
-    const form = document.getElementById("grading-form");
-    const body = document.getElementById("grading-body");
-    const cancelEditBtn = document.getElementById("cancel-edit");
-    const noDataMsg = document.getElementById("no-data");
+  () => {
+    'use strict';
 
-    let editingIndex = null;
+    // References
+    const roleSelect = document.getElementById('roleSelect');
+    const gradeForm = document.getElementById('gradeForm');
+    const gradeNameInput = document.getElementById('gradeName');
+    const minMarksInput = document.getElementById('minMarks');
+    const maxMarksInput = document.getElementById('maxMarks');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
 
-    function hasEditAccess() {
-      return role === "faculty" || role === "admin";
+    const gradesTableBody = document.getElementById('gradesTableBody');
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const sortSelect = document.getElementById('sortSelect');
+    const exportCSVBtn = document.getElementById('exportCSVBtn');
+    const exportPDFBtn = document.getElementById('exportPDFBtn');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+
+    const toastEl = document.getElementById('toast');
+
+    const gradesChartCtx = document.getElementById('gradesChart').getContext('2d');
+
+    // State
+    let gradesData = [];
+    let editingIndex = -1;
+    let userRole = roleSelect.value;
+    let currentPage = 1;
+    const itemsPerPage = 5;
+    let searchTerm = '';
+    let sortOption = 'grade_asc';
+    let undoStack = [];
+    let redoStack = [];
+    let gradesChart = null;
+
+    // Toast
+    function showToast(message, type = 'success') {
+      toastEl.textContent = message;
+      toastEl.className = 'fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg font-semibold transition-opacity duration-300 pointer-events-auto';
+      if(type === 'success') {
+        toastEl.classList.add('bg-green-600');
+      } else if(type === 'error') {
+        toastEl.classList.add('bg-red-600');
+      } else {
+        toastEl.classList.add('bg-gray-600');
+      }
+      toastEl.style.opacity = '1';
+      setTimeout(() => {
+        toastEl.style.opacity = '0';
+        toastEl.className = 'fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg font-semibold transition-opacity duration-300 pointer-events-none';
+      }, 3000);
     }
 
-    // Show/Hide form and controls based on role
-    if (hasEditAccess()) {
-      document.getElementById("grading-form-container").classList.remove("hidden");
-      document.getElementById("actions-header").classList.remove("hidden");
-    } else {
-      document.getElementById("unauthorized-msg").classList.remove("hidden");
+    // Save to localStorage
+    function saveGrades() {
+      localStorage.setItem('examinationGradesData', JSON.stringify(gradesData));
+    }
+    // Load from localStorage
+    function loadGrades() {
+      const stored = localStorage.getItem('examinationGradesData');
+      if(stored) {
+        try {
+          gradesData = JSON.parse(stored);
+        } catch {
+          gradesData = [];
+        }
+      }
     }
 
-    // Save grade
-    form.addEventListener("submit", (e) => {
+    // Role based controls
+    function updateAccessControls() {
+      // Only faculty or admin can add/edit/delete
+      if(userRole === 'faculty' || userRole === 'admin') {
+        gradeNameInput.disabled = false;
+        minMarksInput.disabled = false;
+        maxMarksInput.disabled = false;
+        submitBtn.disabled = false;
+      } else {
+        gradeNameInput.disabled = true;
+        minMarksInput.disabled = true;
+        maxMarksInput.disabled = true;
+        submitBtn.disabled = true;
+      }
+    }
+
+    // Undo/Redo stack handling
+    function pushUndoState() {
+      undoStack.push(JSON.stringify(gradesData));
+      if(undoStack.length > 20) undoStack.shift();
+      redoStack = [];
+      updateUndoRedoButtons();
+    }
+    function undo() {
+      if(undoStack.length === 0) return;
+      redoStack.push(JSON.stringify(gradesData));
+      const prev = undoStack.pop();
+      gradesData = JSON.parse(prev);
+      editingIndex = -1;
+      saveGrades();
+      renderTable();
+      renderChart();
+      showToast('Undo successful');
+      updateUndoRedoButtons();
+    }
+    function redo() {
+      if(redoStack.length === 0) return;
+      undoStack.push(JSON.stringify(gradesData));
+      const next = redoStack.pop();
+      gradesData = JSON.parse(next);
+      editingIndex = -1;
+      saveGrades();
+      renderTable();
+      renderChart();
+      showToast('Redo successful');
+      updateUndoRedoButtons();
+    }
+    function updateUndoRedoButtons() {
+      // Could add undo/redo buttons if desired
+    }
+
+    // Validate form inputs
+    function validateInputs(name, min, max) {
+      let valid = true;
+      clearErrors();
+
+      if(!name.trim()) {
+        showError('gradeNameError', 'Grade Name is required');
+        valid = false;
+      }
+      if(min === '' || isNaN(min) || min < 0 || min > 100) {
+        showError('minMarksError', 'Min Marks must be between 0 and 100');
+        valid = false;
+      }
+      if(max === '' || isNaN(max) || max < 0 || max > 100) {
+        showError('maxMarksError', 'Max Marks must be between 0 and 100');
+        valid = false;
+      }
+      if(valid && Number(min) > Number(max)) {
+        showError('minMarksError', 'Min Marks cannot be greater than Max Marks');
+        showError('maxMarksError', 'Max Marks cannot be less than Min Marks');
+        valid = false;
+      }
+      return valid;
+    }
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      if(el) {
+        el.textContent = msg;
+        el.classList.remove('hidden');
+      }
+    }
+    function clearErrors() {
+      ['gradeNameError','minMarksError','maxMarksError'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) {
+          el.textContent = '';
+          el.classList.add('hidden');
+        }
+      });
+    }
+
+    // Reset form
+    function resetForm() {
+      gradeForm.reset();
+      editingIndex = -1;
+      submitBtn.textContent = 'Add Grade';
+      cancelEditBtn.classList.add('hidden');
+      clearErrors();
+    }
+
+    // Add or Edit grade
+    gradeForm.addEventListener('submit', e => {
       e.preventDefault();
-      const grade = document.getElementById("grade").value.trim();
-      const min = parseInt(document.getElementById("min-marks").value);
-      const max = parseInt(document.getElementById("max-marks").value);
-
-      if (min > max) {
-        alert("Minimum marks cannot be greater than maximum marks.");
+      if(!(userRole === 'faculty' || userRole === 'admin')) {
+        showToast('You do not have permission to add or edit grades', 'error');
         return;
       }
 
-      const newGrade = { grade, min, max };
+      const name = gradeNameInput.value.trim();
+      const min = minMarksInput.value.trim();
+      const max = maxMarksInput.value.trim();
 
-      if (editingIndex !== null) {
-        grades[editingIndex] = newGrade;
-        editingIndex = null;
-        cancelEditBtn.classList.add("hidden");
+      if(!validateInputs(name,min,max)) return;
+
+      const minNum = Number(min);
+      const maxNum = Number(max);
+
+      // Check for overlapping ranges with other grades (excluding current edit)
+      const overlap = gradesData.some((g,i) => {
+        if(i === editingIndex) return false;
+        return !(maxNum < g.minMarks || minNum > g.maxMarks);
+      });
+      if(overlap) {
+        showToast('Grade marks range overlaps with an existing grade', 'error');
+        return;
+      }
+
+      pushUndoState();
+
+      if(editingIndex >= 0) {
+        // Edit
+        gradesData[editingIndex] = {gradeName: name, minMarks: minNum, maxMarks: maxNum};
+        showToast('Grade updated');
       } else {
-        grades.push(newGrade);
+        // Add
+        gradesData.push({gradeName: name, minMarks: minNum, maxMarks: maxNum});
+        showToast('Grade added');
       }
 
-      form.reset();
-      saveAndRender();
-    });
-
-    function editGrade(index) {
-      const g = grades[index];
-      document.getElementById("grade").value = g.grade;
-      document.getElementById("min-marks").value = g.min;
-      document.getElementById("max-marks").value = g.max;
-      editingIndex = index;
-      cancelEditBtn.classList.remove("hidden");
-    }
-
-    function cancelEdit() {
-      editingIndex = null;
-      form.reset();
-      cancelEditBtn.classList.add("hidden");
-    }
-
-    function deleteGrade(index) {
-      if (confirm("Are you sure you want to delete this grade?")) {
-        grades.splice(index, 1);
-        saveAndRender();
-      }
-    }
-
-    function saveAndRender() {
-      localStorage.setItem("gradesData", JSON.stringify(grades));
+      saveGrades();
       renderTable();
       renderChart();
-    }
+      resetForm();
+    });
 
+    // Cancel edit
+    cancelEditBtn.addEventListener('click', () => {
+      resetForm();
+    });
+
+    // Render Table with pagination, search, sort
     function renderTable() {
-      body.innerHTML = "";
-      noDataMsg.style.display = grades.length === 0 ? "block" : "none";
+      // Filter by search term
+      let filtered = gradesData.filter(g => g.gradeName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      grades.forEach((g, i) => {
-        let row = `<tr class="border-t">
-          <td class="p-2">${g.grade}</td>
-          <td class="p-2">${g.min}</td>
-          <td class="p-2">${g.max}</td>`;
-        if (hasEditAccess()) {
-          row += `<td class="p-2">
-            <button onclick="editGrade(${i})" class="text-blue-600">Edit</button>
-            <button onclick="deleteGrade(${i})" class="text-red-600 ml-2">Delete</button>
-          </td>`;
+      // Sort
+      filtered.sort((a,b) => {
+        switch(sortOption) {
+          case 'grade_asc': return a.gradeName.localeCompare(b.gradeName);
+          case 'grade_desc': return b.gradeName.localeCompare(a.gradeName);
+          case 'min_asc': return a.minMarks - b.minMarks;
+          case 'min_desc': return b.minMarks - a.minMarks;
+          case 'max_asc': return a.maxMarks - b.maxMarks;
+          case 'max_desc': return b.maxMarks - a.maxMarks;
+          default: return 0;
         }
-        row += "</tr>";
-        body.innerHTML += row;
+      });
+
+      // Pagination
+      const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+      if(currentPage > totalPages) currentPage = totalPages;
+      const start = (currentPage - 1) * itemsPerPage;
+      const pageData = filtered.slice(start, start + itemsPerPage);
+
+      gradesTableBody.innerHTML = '';
+      if(pageData.length === 0) {
+        gradesTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-600 dark:text-gray-400">No grades found</td></tr>`;
+      } else {
+        pageData.forEach((g,i) => {
+          const realIndex = gradesData.indexOf(g);
+          const canEdit = (userRole === 'faculty' || userRole === 'admin');
+          gradesTableBody.insertAdjacentHTML('beforeend', `
+            <tr class="border-b border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <td class="px-4 py-2">${escapeHtml(g.gradeName)}</td>
+              <td class="px-4 py-2 text-center">${g.minMarks}</td>
+              <td class="px-4 py-2 text-center">${g.maxMarks}</td>
+              <td class="px-4 py-2 text-center space-x-2">
+                ${canEdit ? `<button aria-label="Edit grade ${escapeHtml(g.gradeName)}" data-index="${realIndex}" class="editBtn text-blue-600 hover:text-blue-800 focus:outline-none focus:underline">Edit</button>` : ''}
+                ${canEdit ? `<button aria-label="Delete grade ${escapeHtml(g.gradeName)}" data-index="${realIndex}" class="deleteBtn text-red-600 hover:text-red-800 focus:outline-none focus:underline">Delete</button>` : ''}
+                <button aria-label="View grade ${escapeHtml(g.gradeName)} details" data-index="${realIndex}" class="viewBtn text-gray-600 hover:text-gray-800 focus:outline-none focus:underline">View</button>
+              </td>
+            </tr>
+          `);
+        });
+      }
+
+      pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+      prevPageBtn.disabled = currentPage <= 1;
+      nextPageBtn.disabled = currentPage >= totalPages;
+
+      attachTableEventListeners();
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, m => {
+        switch(m) {
+          case '&': return '&amp;';
+          case '<': return '&lt;';
+          case '>': return '&gt;';
+          case '"': return '&quot;';
+          case "'": return '&#39;';
+          default: return m;
+        }
       });
     }
 
-    function renderChart() {
-      const ctx = document.getElementById("gradingChart").getContext("2d");
-      if (window.gradingChart) window.gradingChart.destroy();
-
-      window.gradingChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: grades.map(g => g.grade),
-          datasets: [{
-            label: "Range Width",
-            data: grades.map(g => g.max - g.min),
-            backgroundColor: "rgba(54, 162, 235, 0.6)",
-            borderColor: "rgba(54, 162, 235, 1)",
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: { display: true, text: "Marks Range" }
-            }
-          }
-        }
+    // Attach event listeners to buttons in table
+    function attachTableEventListeners() {
+      document.querySelectorAll('.editBtn').forEach(btn => {
+        btn.onclick = () => {
+          const idx = Number(btn.dataset.index);
+          startEdit(idx);
+        };
+      });
+      document.querySelectorAll('.deleteBtn').forEach(btn => {
+        btn.onclick = () => {
+          const idx = Number(btn.dataset.index);
+          deleteGrade(idx);
+        };
+      });
+      document.querySelectorAll('.viewBtn').forEach(btn => {
+        btn.onclick = () => {
+          const idx = Number(btn.dataset.index);
+          alert(`Grade: ${gradesData[idx].gradeName}\nMin Marks: ${gradesData[idx].minMarks}\nMax Marks: ${gradesData[idx].maxMarks}`);
+        };
       });
     }
 
-    function exportCSV() {
-      const rows = [
-        ["Grade", "Min Marks", "Max Marks"],
-        ...grades.map(g => [g.grade, g.min, g.max])
-      ];
-      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "grading_data.csv");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+    // Start editing a grade
+    function startEdit(index) {
+      if(!(userRole === 'faculty' || userRole === 'admin')) {
+        showToast('You do not have permission to edit grades', 'error');
+        return;
+      }
+      const g = gradesData[index];
+      gradeNameInput.value = g.gradeName;
+      minMarksInput.value = g.minMarks;
+      maxMarksInput.value = g.maxMarks;
+      editingIndex = index;
+      submitBtn.textContent = 'Update Grade';
+      cancelEditBtn.classList.remove('hidden');
+      gradeNameInput.focus();
     }
 
-    function generatePDF() {
+    // Delete grade
+    function deleteGrade(index) {
+      if(!(userRole === 'faculty' || userRole === 'admin')) {
+        showToast('You do not have permission to delete grades', 'error');
+        return;
+      }
+      if(confirm(`Are you sure you want to delete grade "${gradesData[index].gradeName}"?`)) {
+        pushUndoState();
+        gradesData.splice(index,1);
+        saveGrades();
+        renderTable();
+        renderChart();
+        showToast('Grade deleted');
+      }
+    }
+
+    // Pagination buttons
+    prevPageBtn.onclick = () => {
+      if(currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    };
+    nextPageBtn.onclick = () => {
+      currentPage++;
+      renderTable();
+    };
+
+    // Search input
+    searchInput.addEventListener('input', e => {
+      searchTerm = e.target.value.trim();
+      currentPage = 1;
+      renderTable();
+    });
+    clearSearchBtn.onclick = () => {
+      searchTerm = '';
+      searchInput.value = '';
+      currentPage = 1;
+      renderTable();
+    };
+
+    // Sort select
+    sortSelect.addEventListener('change', e => {
+      sortOption = e.target.value;
+      renderTable();
+    });
+
+    // Export CSV
+    exportCSVBtn.onclick = () => {
+      if(gradesData.length === 0) {
+        showToast('No data to export', 'error');
+        return;
+      }
+      let csvContent = 'Grade Name,Min Marks,Max Marks\n';
+      gradesData.forEach(g => {
+        csvContent += `"${g.gradeName.replace(/"/g,'""')}",${g.minMarks},${g.maxMarks}\n`;
+      });
+      const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'grades_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('CSV exported');
+    };
+
+    // Export PDF
+    exportPDFBtn.onclick = () => {
+      if(gradesData.length === 0) {
+        showToast('No data to export', 'error');
+        return;
+      }
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      doc.setFontSize(18);
-      doc.text("Grading Data", 14, 20);
-      doc.setFontSize(12);
-
-      let y = 30;
-      grades.forEach((g, i) => {
-        doc.text(`${i + 1}. Grade: ${g.grade}, Min: ${g.min}, Max: ${g.max}`, 14, y);
-        y += 8;
+      doc.setFontSize(16);
+      doc.text('Examination Grades', 14, 20);
+      const tableColumn = ["Grade Name", "Min Marks", "Max Marks"];
+      const tableRows = [];
+      gradesData.forEach(g => {
+        const row = [g.gradeName, g.minMarks.toString(), g.maxMarks.toString()];
+        tableRows.push(row);
       });
-      doc.save("grading_data.pdf");
-    }
+      // Using autoTable plugin
+      if(doc.autoTable) {
+        doc.autoTable({
+          head: [tableColumn],
+          body: tableRows,
+          startY: 30,
+          styles: { fontSize: 12 },
+        });
+      } else {
+        // Fallback if autoTable plugin not loaded
+        let y = 30;
+        doc.setFontSize(12);
+        tableRows.forEach(row => {
+          doc.text(row.join(' | '), 14, y);
+          y += 8;
+        });
+      }
+      doc.save('grades_export.pdf');
+      showToast('PDF exported');
+    };
 
-    // Initialize
-    saveAndRender();
-  </script>
-</body>
-</html>
+    // Initial render
+    renderTable();
+    renderChart();
+    updateUndoRedoButtons();
+  };
