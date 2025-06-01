@@ -1,197 +1,698 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth" >
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Examination Management</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- jsPDF and AutoTable CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    /* Toast container & animation */
+    #toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1000;
+    }
+    .toast {
+      background-color: #38a169;
+      color: white;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 0.5rem;
+      border-radius: 0.375rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      animation: fadeinout 3s forwards;
+    }
+    @keyframes fadeinout {
+      0% {opacity: 0; transform: translateX(50%);}
+      10%, 90% {opacity: 1; transform: translateX(0);}
+      100% {opacity: 0; transform: translateX(50%);}
+    }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
-  <div class="max-w-6xl mx-auto p-6">
-    <h2 class="text-3xl font-bold mb-6 text-center">📘 Examination Management</h2>
+<body class="bg-gray-50 min-h-screen flex flex-col">
 
-    <!-- Form Section -->
-    <form id="exams-form" class="bg-white p-6 rounded-lg shadow-md mb-6 space-y-4 hidden">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input type="text" id="student-id" placeholder="Student ID" required class="border p-2 rounded w-full"/>
-        <input type="text" id="subject" placeholder="Subject" required class="border p-2 rounded w-full"/>
-        <input type="number" id="marks" placeholder="Marks" required class="border p-2 rounded w-full"/>
-      </div>
-      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Submit</button>
-    </form>
-
-    <!-- Filter Section -->
-    <div class="mb-4 flex flex-wrap gap-4" id="filters">
-      <input type="text" id="filter-student-id" placeholder="Filter by Student ID" class="border p-2 rounded"/>
-      <input type="text" id="filter-subject" placeholder="Filter by Subject" class="border p-2 rounded"/>
-      <button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
+  <header class="bg-blue-700 text-white p-4 shadow-md flex justify-between items-center">
+    <h1 class="text-2xl font-semibold">Examination Management</h1>
+    <div>
+      <button id="exportCSVBtn" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded mr-2" title="Export CSV">Export CSV</button>
+      <button id="exportPDFBtn" class="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded" title="Export PDF">Export PDF</button>
     </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl mx-auto p-4">
+    <!-- Role check message -->
+    <div id="accessDenied" class="hidden bg-red-200 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+      You do not have permission to access this module.
+    </div>
+
+    <!-- Form (shown only for faculty role) -->
+    <section id="formSection" class="mb-6 hidden bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4">Add / Edit Examination Record</h2>
+      <form id="examForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+          <label for="studentIdInput" class="block mb-1 font-medium">Student ID</label>
+          <input id="studentIdInput" type="text" placeholder="Enter Student ID" required class="w-full border border-gray-300 rounded px-3 py-2" />
+        </div>
+        <div>
+          <label for="subjectInput" class="block mb-1 font-medium">Subject</label>
+          <input id="subjectInput" type="text" placeholder="Enter Subject" required class="w-full border border-gray-300 rounded px-3 py-2" />
+        </div>
+        <div>
+          <label for="marksInput" class="block mb-1 font-medium">Marks (0-100 or leave blank if Absent)</label>
+          <input id="marksInput" type="number" min="0" max="100" placeholder="Marks or leave blank" class="w-full border border-gray-300 rounded px-3 py-2" />
+        </div>
+        <div>
+          <label for="dateInput" class="block mb-1 font-medium">Date</label>
+          <input id="dateInput" type="date" required class="w-full border border-gray-300 rounded px-3 py-2" />
+        </div>
+
+        <div class="md:col-span-4 flex justify-end gap-3 mt-2">
+          <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded font-semibold">Add Record</button>
+          <button type="button" id="cancelEditBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-5 py-2 rounded font-semibold hidden">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Filters -->
+    <section class="mb-6 bg-white p-6 rounded shadow grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label for="filterStudentId" class="block mb-1 font-medium">Filter by Student ID</label>
+        <input id="filterStudentId" type="text" placeholder="Filter Student ID" class="w-full border border-gray-300 rounded px-3 py-2" />
+      </div>
+      <div>
+        <label for="filterSubject" class="block mb-1 font-medium">Filter by Subject</label>
+        <input id="filterSubject" type="text" placeholder="Filter Subject" class="w-full border border-gray-300 rounded px-3 py-2" />
+      </div>
+      <div>
+        <label for="filterDate" class="block mb-1 font-medium">Filter by Date</label>
+        <input id="filterDate" type="date" class="w-full border border-gray-300 rounded px-3 py-2" />
+      </div>
+    </section>
 
     <!-- Table -->
-    <div class="overflow-x-auto">
-      <table class="min-w-full bg-white rounded-lg shadow-md" id="exams-table">
-        <thead class="bg-gray-200">
+    <section class="mb-6 bg-white p-6 rounded shadow overflow-x-auto">
+      <table id="examTable" class="min-w-full table-auto border-collapse border border-gray-200 text-left">
+        <thead class="bg-blue-100">
           <tr>
-            <th class="text-left py-2 px-4">Student ID</th>
-            <th class="text-left py-2 px-4">Subject</th>
-            <th class="text-left py-2 px-4">Marks</th>
-            <th class="text-left py-2 px-4">Actions</th>
+            <th class="border border-gray-300 px-4 py-2">Student ID</th>
+            <th class="border border-gray-300 px-4 py-2">Subject</th>
+            <th class="border border-gray-300 px-4 py-2">Marks</th>
+            <th class="border border-gray-300 px-4 py-2">Date</th>
+            <th id="actionHeader" class="border border-gray-300 px-4 py-2 hidden">Actions</th>
           </tr>
         </thead>
-        <tbody id="table-body" class="divide-y divide-gray-100">
-        </tbody>
+        <tbody></tbody>
       </table>
-    </div>
+    </section>
 
-    <!-- Chart -->
-    <div class="mt-10 bg-white p-6 rounded shadow-md">
-      <h3 class="text-xl font-semibold mb-4">📊 Marks Summary</h3>
-      <canvas id="marksChart"></canvas>
-    </div>
-  </div>
+    <!-- Chart Section -->
+    <section class="bg-white p-6 rounded shadow">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Marks Distribution Chart</h2>
+        <select id="chartType" class="border border-gray-300 rounded px-3 py-2">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+          <option value="radar">Radar</option>
+        </select>
+      </div>
+      <canvas id="marksChart" class="w-full max-w-4xl" style="height: 320px;"></canvas>
+      <div id="analytics" class="mt-6 text-gray-700"></div>
+    </section>
+  </main>
 
-  <script>
-    const tableBody = document.getElementById('table-body');
-    const chartCtx = document.getElementById('marksChart').getContext('2d');
-    const form = document.getElementById("exams-form");
-    const role = localStorage.getItem("role");
-    const currentStudentId = localStorage.getItem("studentId");
+  <!-- Toast container -->
+  <div id="toast-container"></div>
 
-    let records = [
-      { studentId: "S123", subject: "Math", marks: 80 },
-      { studentId: "S123", subject: "Science", marks: 85 },
-      { studentId: "S456", subject: "Math", marks: 75 },
-      { studentId: "S789", subject: "History", marks: 90 },
-    ];
-    let chart;
+<script>
+(() => {
+  // Simulated user role; change this to "faculty" or "student" to test access control
+  const userRole = localStorage.getItem('userRole') || "faculty";
 
-    const isFaculty = role === "faculty";
-    const isStudent = role === "student";
-    const isParent = role === "parent";
+  // DOM elements
+  const accessDeniedEl = document.getElementById("accessDenied");
+  const formSection = document.getElementById("formSection");
+  const examForm = document.getElementById("examForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
 
-    // Show form only for faculty
-    if (isFaculty) {
-      form.classList.remove("hidden");
+  const studentIdInput = document.getElementById("studentIdInput");
+  const subjectInput = document.getElementById("subjectInput");
+  const marksInput = document.getElementById("marksInput");
+  const dateInput = document.getElementById("dateInput");
+
+  const filterStudentIdInput = document.getElementById("filterStudentId");
+  const filterSubjectInput = document.getElementById("filterSubject");
+  const filterDateInput = document.getElementById("filterDate");
+
+  const examTableBody = document.querySelector("#examTable tbody");
+  const actionHeader = document.getElementById("actionHeader");
+
+  const exportCSVBtn = document.getElementById("exportCSVBtn");
+  const exportPDFBtn = document.getElementById("exportPDFBtn");
+
+  const chartTypeSelector = document.getElementById("chartType");
+  const marksChartCtx = document.getElementById("marksChart").getContext("2d");
+  const analyticsEl = document.getElementById("analytics");
+
+  const toastContainer = document.getElementById("toast-container");
+
+  // State
+  let exams = JSON.parse(localStorage.getItem("examsData") || "[]");
+  let editingId = null;
+  let marksChart = null;
+
+  // Role-based access
+  if(userRole !== "faculty" && userRole !== "student"){
+    accessDeniedEl.classList.remove("hidden");
+    formSection.style.display = "none";
+    exportCSVBtn.disabled = true;
+    exportPDFBtn.disabled = true;
+    filterStudentIdInput.disabled = true;
+    filterSubjectInput.disabled = true;
+    filterDateInput.disabled = true;
+    chartTypeSelector.disabled = true;
+    return;
+  }
+
+  if(userRole === "faculty") {
+    formSection.classList.remove("hidden");
+    actionHeader.classList.remove("hidden");
+  }
+
+  if(userRole === "student") {
+    formSection.style.display = "none";
+    actionHeader.classList.add("hidden");
+  }
+
+  // Utility: Show toast notification
+  function showToast(message, duration=3000){
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+      toast.remove();
+    }, duration);
+  }
+
+  // Save exams to localStorage
+  function saveExams() {
+    localStorage.setItem("examsData", JSON.stringify(exams));
+  }
+
+  // Validate form inputs
+  function validateForm() {
+    if(!studentIdInput.value.trim()) {
+      alert("Student ID is required");
+      return false;
     }
+    if(!subjectInput.value.trim()) {
+      alert("Subject is required");
+      return false;
+    }
+    if(!dateInput.value) {
+      alert("Date is required");
+      return false;
+    }
+    if(marksInput.value !== "" && (isNaN(marksInput.value) || marksInput.value < 0 || marksInput.value > 100)) {
+      alert("Marks must be a number between 0 and 100 or left blank");
+      return false;
+    }
+    return true;
+  }
 
-    function getVisibleRecords() {
-      if (isFaculty) return records;
-      if (isStudent || isParent) {
-        return records.filter(r => r.studentId === currentStudentId);
+  // Reset form to initial state
+  function resetForm() {
+    examForm.reset();
+    editingId = null;
+    submitBtn.textContent = "Add Record";
+    cancelEditBtn.classList.add("hidden");
+  }
+
+  // Add or Update record
+  examForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if(!validateForm()) return;
+
+    const record = {
+      id: editingId || Date.now(),
+      studentId: studentIdInput.value.trim(),
+      subject: subjectInput.value.trim(),
+      marks: marksInput.value === "" ? null : Number(marksInput.value),
+      date: dateInput.value
+    };
+
+    if(editingId) {
+      // Update existing
+      const idx = exams.findIndex(ex => ex.id === editingId);
+      if(idx !== -1) {
+        exams[idx] = record;
+        showToast("Record updated successfully");
       }
-      return [];
+    } else {
+      // Add new
+      exams.push(record);
+      showToast("Record added successfully");
     }
+    saveExams();
+    resetForm();
+    renderTable();
+    renderChart();
+    renderAnalytics();
+  });
 
-    function renderTable() {
-      tableBody.innerHTML = "";
+  // Cancel edit mode
+  cancelEditBtn.addEventListener("click", () => {
+    resetForm();
+  });
 
-      const studentFilter = document.getElementById("filter-student-id").value.toLowerCase();
-      const subjectFilter = document.getElementById("filter-subject").value.toLowerCase();
+  // Render table rows based on filters and role
+  function renderTable() {
+    const filterId = filterStudentIdInput.value.trim().toLowerCase();
+    const filterSubject = filterSubjectInput.value.trim().toLowerCase();
+    const filterDate = filterDateInput.value;
 
-      const filtered = getVisibleRecords().filter(r =>
-        r.studentId.toLowerCase().includes(studentFilter) &&
-        r.subject.toLowerCase().includes(subjectFilter)
-      );
+    examTableBody.innerHTML = "";
 
-      filtered.forEach((r, i) => {
-        const globalIndex = records.indexOf(r);
-        tableBody.innerHTML += `
-          <tr>
-            <td class="py-2 px-4">${r.studentId}</td>
-            <td class="py-2 px-4">${r.subject}</td>
-            <td class="py-2 px-4">${r.marks}</td>
-            <td class="py-2 px-4">
-              ${isFaculty ? `
-                <button onclick="editRecord(${globalIndex})" class="text-blue-600 hover:underline">Edit</button>
-                <button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline ml-2">Delete</button>
-              ` : 'N/A'}
-            </td>
-          </tr>
-        `;
-      });
-
-      updateChart(filtered);
-    }
-
-    function updateChart(data) {
-      const subjects = [...new Set(data.map(r => r.subject))];
-      const averages = subjects.map(sub =>
-        Math.round(data.filter(r => r.subject === sub).reduce((sum, r) => sum + Number(r.marks), 0) /
-        data.filter(r => r.subject === sub).length)
-      );
-
-      if (chart) chart.destroy();
-      chart = new Chart(chartCtx, {
-        type: 'bar',
-        data: {
-          labels: subjects,
-          datasets: [{
-            label: 'Average Marks',
-            data: averages,
-            backgroundColor: 'rgba(59, 130, 246, 0.7)'
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      });
-    }
-
-    function editRecord(index) {
-      const r = records[index];
-      document.getElementById("student-id").value = r.studentId;
-      document.getElementById("subject").value = r.subject;
-      document.getElementById("marks").value = r.marks;
-      records.splice(index, 1);
-      renderTable();
-    }
-
-    function deleteRecord(index) {
-      if (confirm("Are you sure you want to delete this record?")) {
-        records.splice(index, 1);
-        renderTable();
-      }
-    }
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const studentId = document.getElementById("student-id").value.trim();
-      const subject = document.getElementById("subject").value.trim();
-      const marks = parseInt(document.getElementById("marks").value.trim());
-
-      if (studentId && subject && !isNaN(marks)) {
-        records.push({ studentId, subject, marks });
-        renderTable();
-        form.reset();
-      }
+    let filteredExams = exams.filter(e => {
+      const matchId = e.studentId.toLowerCase().includes(filterId);
+      const matchSubject = e.subject.toLowerCase().includes(filterSubject);
+      const matchDate = filterDate ? e.date === filterDate : true;
+      return matchId && matchSubject && matchDate;
     });
 
-    document.getElementById("filter-student-id").addEventListener("input", renderTable);
-    document.getElementById("filter-subject").addEventListener("input", renderTable);
-
-    function exportCSV() {
-      const visibleRecords = getVisibleRecords();
-      const csv = [
-        ["Student ID", "Subject", "Marks"],
-        ...visibleRecords.map(r => [r.studentId, r.subject, r.marks])
-      ].map(e => e.join(",")).join("\n");
-
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "exam_records.csv";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    if(filteredExams.length === 0) {
+      examTableBody.innerHTML = `<tr><td colspan="${userRole === 'faculty' ? 5 : 4}" class="text-center py-4 text-gray-500">No records found.</td></tr>`;
+      return;
     }
 
+    for (const exam of filteredExams) {
+      const tr = document.createElement("tr");
+      tr.className = "even:bg-gray-50";
+
+      const tdStudentId = document.createElement("td");
+      tdStudentId.className = "border border-gray-300 px-4 py-2";
+      tdStudentId.textContent = exam.studentId;
+      tr.appendChild(tdStudentId);
+
+      const tdSubject = document.createElement("td");
+      tdSubject.className = "border border-gray-300 px-4 py-2";
+      tdSubject.textContent = exam.subject;
+      tr.appendChild(tdSubject);
+
+      const tdMarks = document.createElement("td");
+      tdMarks.className = "border border-gray-300 px-4 py-2";
+      tdMarks.textContent = exam.marks === null ? "Absent" : exam.marks;
+      tr.appendChild(tdMarks);
+
+      const tdDate = document.createElement("td");
+      tdDate.className = "border border-gray-300 px-4 py-2";
+      tdDate.textContent = exam.date;
+      tr.appendChild(tdDate);
+
+      if(userRole === "faculty") {
+        const tdActions = document.createElement("td");
+        tdActions.className = "border border-gray-300 px-4 py-2 space-x-2";
+
+        // Edit button
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.className = "bg-yellow-400 hover:bg-yellow-500 text-black px-2 py-1 rounded";
+        editBtn.addEventListener("click", () => {
+          editingId = exam.id;
+          studentIdInput.value = exam.studentId;
+          subjectInput.value = exam.subject;
+          marksInput.value = exam.marks === null ? "" : exam.marks;
+          dateInput.value = exam.date;
+          submitBtn.textContent = "Update Record";
+          cancelEditBtn.classList.remove("hidden");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        tdActions.appendChild(editBtn);
+
+        // Delete button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded";
+        deleteBtn.addEventListener("click", () => {
+          if(confirm("Are you sure you want to delete this record?")) {
+            exams = exams.filter(e => e.id !== exam.id);
+            saveExams();
+            renderTable();
+            renderChart();
+            renderAnalytics();
+            showToast("Record deleted");
+          }
+        });
+        tdActions.appendChild(deleteBtn);
+
+        tr.appendChild(tdActions);
+      }
+
+      examTableBody.appendChild(tr);
+    }
+  }
+
+  // Export CSV
+  function exportCSV() {
+    if (exams.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+    const headers = ["Student ID", "Subject", "Marks", "Date"];
+    const rows = exams.map(e => [
+      e.studentId,
+      e.subject,
+      e.marks === null ? "Absent" : e.marks,
+      e.date
+    ]);
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += headers.join(",") + "\n";
+    rows.forEach(row => {
+      // Escape commas in data fields if any
+      const escapedRow = row.map(field => `"${String(field).replace(/"/g, '""')}"`);
+      csvContent += escapedRow.join(",") + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "examination_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Export PDF
+  function exportPDF() {
+    if (exams.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Examination Data", 14, 22);
+
+    const headers = [["Student ID", "Subject", "Marks", "Date"]];
+    const rows = exams.map(e => [
+      e.studentId,
+      e.subject,
+      e.marks === null ? "Absent" : e.marks.toString(),
+      e.date
+    ]);
+
+    doc.autoTable({
+      head: headers,
+      body: rows,
+      startY: 30,
+      styles: { fontSize: 10 }
+    });
+
+    doc.save("examination_data.pdf");
+          const tdDate = document.createElement("td");
+      tdDate.className = "border border-gray-300 px-4 py-2";
+      tdDate.textContent = exam.date;
+      tr.appendChild(tdDate);
+
+      if(userRole === "faculty") {
+        const tdActions = document.createElement("td");
+        tdActions.className = "border border-gray-300 px-4 py-2 space-x-2";
+
+        // Edit button
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.className = "bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1 rounded";
+        editBtn.addEventListener("click", () => startEdit(exam.id));
+        tdActions.appendChild(editBtn);
+
+        // Delete button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded";
+        deleteBtn.addEventListener("click", () => deleteRecord(exam.id));
+        tdActions.appendChild(deleteBtn);
+
+        tr.appendChild(tdActions);
+      }
+
+      examTableBody.appendChild(tr);
+    }
+  })
+
+  // Start editing a record
+  function startEdit(id) {
+    const record = exams.find(ex => ex.id === id);
+    if(!record) return;
+    editingId = id;
+    studentIdInput.value = record.studentId;
+    subjectInput.value = record.subject;
+    marksInput.value = record.marks === null ? "" : record.marks;
+    dateInput.value = record.date;
+    submitBtn.textContent = "Update Record";
+    cancelEditBtn.classList.remove("hidden");
+  }
+
+  // Delete a record
+  function deleteRecord(id) {
+    if(!confirm("Are you sure you want to delete this record?")) return;
+    exams = exams.filter(ex => ex.id !== id);
+    saveExams();
     renderTable();
-  </script>
+    renderChart();
+    renderAnalytics();
+    showToast("Record deleted");
+    if(editingId === id) resetForm();
+  }
+
+  // Export CSV
+  function exportCSV() {
+    if(exams.length === 0) {
+      alert("No data to export");
+      return;
+    }
+    const headers = ["Student ID","Subject","Marks","Date"];
+    const rows = exams.map(e => [
+      e.studentId,
+      e.subject,
+      e.marks === null ? "Absent" : e.marks,
+      e.date
+    ]);
+    let csvContent = "data:text/csv;charset=utf-8,"
+      + headers.join(",") + "\n"
+      + rows.map(r => r.map(field => `"${field}"`).join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const dateStr = new Date().toISOString().slice(0,10);
+    link.setAttribute("download", `examination_records_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Export PDF
+  async function exportPDF() {
+    if(exams.length === 0) {
+      alert("No data to export");
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Examination Records", 14, 22);
+
+    const headers = [["Student ID", "Subject", "Marks", "Date"]];
+    const data = exams.map(e => [
+      e.studentId,
+      e.subject,
+      e.marks === null ? "Absent" : e.marks.toString(),
+      e.date
+    ]);
+
+    doc.autoTable({
+      startY: 30,
+      head: headers,
+      body: data,
+      theme: 'striped',
+      headStyles: {fillColor: [59, 130, 246]},
+      styles: {fontSize: 10}
+    });
+
+    const dateStr = new Date().toISOString().slice(0,10);
+    doc.save(`examination_records_${dateStr}.pdf`);
+  }
+
+  // Render chart using Chart.js
+  function renderChart() {
+    const filteredExams = getFilteredExams();
+
+    if(marksChart) {
+      marksChart.destroy();
+      marksChart = null;
+    }
+    if(filteredExams.length === 0) {
+      marksChartCtx.clearRect(0, 0, marksChartCtx.canvas.width, marksChartCtx.canvas.height);
+      return;
+    }
+
+    // Prepare data: Average marks per subject
+    const subjectMap = {};
+    for(const ex of filteredExams) {
+      if(ex.marks === null) continue;
+      if(!subjectMap[ex.subject]) subjectMap[ex.subject] = { total: 0, count: 0 };
+      subjectMap[ex.subject].total += ex.marks;
+      subjectMap[ex.subject].count += 1;
+    }
+
+    const subjects = Object.keys(subjectMap);
+    const averages = subjects.map(s => subjectMap[s].total / subjectMap[s].count);
+
+    if(subjects.length === 0){
+      marksChartCtx.clearRect(0, 0, marksChartCtx.canvas.width, marksChartCtx.canvas.height);
+      return;
+    }
+
+    const chartType = chartTypeSelector.value || "bar";
+
+    marksChart = new Chart(marksChartCtx, {
+      type: chartType,
+      data: {
+        labels: subjects,
+        datasets: [{
+          label: 'Average Marks',
+          data: averages,
+          backgroundColor: 'rgba(59, 130, 246, 0.6)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 1,
+          fill: chartType === "line" ? false : true,
+          pointRadius: chartType === "line" ? 5 : 0,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: chartType === "pie" || chartType === "radar" ? {} : {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              stepSize: 10
+            },
+            title: {
+              display: true,
+              text: 'Marks'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Subject'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            enabled: true,
+          }
+        }
+      }
+    });
+  }
+
+  // Get exams filtered by current filters
+  function getFilteredExams() {
+    const filterId = filterStudentIdInput.value.trim().toLowerCase();
+    const filterSubject = filterSubjectInput.value.trim().toLowerCase();
+    const filterDate = filterDateInput.value;
+
+    return exams.filter(e => {
+      const matchId = e.studentId.toLowerCase().includes(filterId);
+      const matchSubject = e.subject.toLowerCase().includes(filterSubject);
+      const matchDate = filterDate ? e.date === filterDate : true;
+      return matchId && matchSubject && matchDate;
+    });
+  }
+
+  // Render analytics summary below chart
+  function renderAnalytics() {
+    const filteredExams = getFilteredExams();
+    if(filteredExams.length === 0) {
+      analyticsEl.textContent = "No data for analytics.";
+      return;
+    }
+
+    const marksArray = filteredExams
+      .map(e => e.marks)
+      .filter(m => m !== null);
+
+    if(marksArray.length === 0) {
+      analyticsEl.textContent = "No marks data to analyze (all students absent in filter).";
+      return;
+    }
+
+    const total = marksArray.reduce((a,b) => a+b, 0);
+    const avg = (total / marksArray.length).toFixed(2);
+    const max = Math.max(...marksArray);
+    const min = Math.min(...marksArray);
+
+    analyticsEl.innerHTML = `
+      <p><strong>Records count:</strong> ${filteredExams.length}</p>
+      <p><strong>Marks present:</strong> ${marksArray.length}</p>
+      <p><strong>Average Marks:</strong> ${avg}</p>
+      <p><strong>Highest Marks:</strong> ${max}</p>
+      <p><strong>Lowest Marks:</strong> ${min}</p>
+    `;
+  }
+
+  // Event listeners for filters & chart type
+  filterStudentIdInput.addEventListener("input", () => {
+    renderTable();
+    renderChart();
+    renderAnalytics();
+  });
+  filterSubjectInput.addEventListener("input", () => {
+    renderTable();
+    renderChart();
+    renderAnalytics();
+  });
+  filterDateInput.addEventListener("change", () => {
+    renderTable();
+    renderChart();
+    renderAnalytics();
+  });
+  chartTypeSelector.addEventListener("change", () => {
+    renderChart();
+  });
+
+  // Export buttons
+  exportCSVBtn.addEventListener("click", exportCSV);
+  exportPDFBtn.addEventListener("click", exportPDF);
+
+  // Initial render
+  renderTable();
+  renderChart();
+  renderAnalytics();
+</script>
 </body>
 </html>
+
