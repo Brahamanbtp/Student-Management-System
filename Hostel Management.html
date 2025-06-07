@@ -1,143 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hostel Management</title>
   <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
+
 <body class="bg-gray-100 p-6">
-<div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md">
-  <h2 class="text-2xl font-bold mb-6">Hostel Management</h2>
+  <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Hostel Management</h2>
+      <button onclick="toggleDarkMode()" class="bg-gray-800 text-white px-4 py-1 rounded">Toggle Dark Mode</button>
+    </div>
 
-  <div id="hostel-form-container" class="mb-6 hidden">
-    <form id="hostel-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <input type="text" id="student-id" placeholder="Student ID" class="border p-2 rounded" required>
-      <input type="text" id="hostel-room" placeholder="Hostel Room (leave blank for auto-assign)" class="border p-2 rounded">
-      <input type="date" id="check-in-date" class="border p-2 rounded" required>
-      <input type="date" id="check-out-date" class="border p-2 rounded" required>
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 col-span-full">Assign Room</button>
-    </form>
+    <div id="hostel-form-container" class="mb-6 hidden">
+      <form id="hostel-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" id="student-id" placeholder="Student ID" class="border p-2 rounded" required>
+        <input type="text" id="hostel-room" placeholder="Hostel Room (leave blank for auto-assign)" class="border p-2 rounded">
+        <input type="date" id="check-in-date" class="border p-2 rounded" required>
+        <input type="date" id="check-out-date" class="border p-2 rounded" required>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 col-span-full">Assign Room</button>
+      </form>
+    </div>
+
+    <div class="flex flex-wrap justify-end space-x-2 mb-4">
+      <input type="text" id="search-bar" placeholder="Search by Student ID" class="border px-4 py-2 rounded">
+      <button onclick="exportToCSV()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Export CSV</button>
+      <button onclick="exportToPDF()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Export PDF</button>
+      <input type="file" id="import-csv" accept=".csv" class="hidden">
+      <button onclick="document.getElementById('import-csv').click()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">Import CSV</button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table id="hostel-table" class="w-full border">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2">Student ID</th>
+            <th class="p-2">Hostel Room</th>
+            <th class="p-2">Check-in</th>
+            <th class="p-2">Check-out</th>
+            <th class="p-2 hidden" id="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="hostel-body"></tbody>
+      </table>
+    </div>
+
+    <canvas id="hostel-chart" class="mt-6"></canvas>
   </div>
 
-  <div class="flex justify-end space-x-2 mb-4">
-    <button onclick="exportToCSV()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Export CSV</button>
-    <button onclick="exportToPDF()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Export PDF</button>
-  </div>
+  <script>
+    const role = localStorage.getItem("role");
+    const formContainer = document.getElementById("hostel-form-container");
+    const actionsHeader = document.getElementById("actions-header");
 
-  <table id="hostel-table" class="w-full border">
-    <thead class="bg-gray-200">
-      <tr>
-        <th class="p-2">Student ID</th>
-        <th class="p-2">Hostel Room</th>
-        <th class="p-2">Check-in Date</th>
-        <th class="p-2">Check-out Date</th>
-        <th class="p-2 hidden" id="actions-header">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="hostel-body"></tbody>
-  </table>
-</div>
-
-<script>
-const role = localStorage.getItem("role");
-const formContainer = document.getElementById("hostel-form-container");
-const actionsHeader = document.getElementById("actions-header");
-
-if (role === "faculty" || role === "admin") {
-  formContainer.classList.remove("hidden");
-  actionsHeader.classList.remove("hidden");
-}
-
-let hostelData = JSON.parse(localStorage.getItem("hostelData")) || [];
-const tableBody = document.getElementById("hostel-body");
-
-function autoAssignRoom() {
-  return 'Room-' + Math.floor(100 + Math.random() * 900);
-}
-
-function updateTable() {
-  tableBody.innerHTML = "";
-  hostelData.forEach((entry, index) => {
-    const today = new Date().toISOString().split("T")[0];
-    const checkout = new Date(entry.checkout);
-    const alertClass = entry.checkout <= today ? "bg-yellow-100" : "";
-
-    let row = `<tr class="border-t ${alertClass}">
-      <td class="p-2">${entry.studentId}</td>
-      <td class="p-2">${entry.room}</td>
-      <td class="p-2">${entry.checkin}</td>
-      <td class="p-2">${entry.checkout}</td>`;
-    if (role === "faculty" || role === "admin") {
-      row += `<td class="p-2">
-        <button onclick="editEntry(${index})" class="text-blue-600">Edit</button>
-        <button onclick="deleteEntry(${index})" class="text-red-600 ml-2">Delete</button>
-      </td>`;
+    if (role === "student" || role === "faculty") {
+      formContainer.classList.remove("hidden");
+      actionsHeader.classList.remove("hidden");
     }
-    row += `</tr>`;
-    tableBody.innerHTML += row;
-  });
-  localStorage.setItem("hostelData", JSON.stringify(hostelData));
-  new simpleDatatables.DataTable("#hostel-table");
-}
 
-document.getElementById("hostel-form").addEventListener("submit", function (e) {
-  e.preventDefault();
-  const studentId = document.getElementById("student-id").value;
-  let room = document.getElementById("hostel-room").value || autoAssignRoom();
-  const checkin = document.getElementById("check-in-date").value;
-  const checkout = document.getElementById("check-out-date").value;
+    let hostelData = JSON.parse(localStorage.getItem("hostelData")) || [];
+    const tableBody = document.getElementById("hostel-body");
 
-  hostelData.push({ studentId, room, checkin, checkout });
-  updateTable();
-  this.reset();
-});
+    function autoAssignRoom() {
+      return 'Room-' + Math.floor(100 + Math.random() * 900);
+    }
 
-function editEntry(index) {
-  const entry = hostelData[index];
-  document.getElementById("student-id").value = entry.studentId;
-  document.getElementById("hostel-room").value = entry.room;
-  document.getElementById("check-in-date").value = entry.checkin;
-  document.getElementById("check-out-date").value = entry.checkout;
-  hostelData.splice(index, 1);
-  updateTable();
-}
+    function updateTable() {
+      tableBody.innerHTML = "";
+      hostelData.forEach((entry, index) => {
+        const today = new Date().toISOString().split("T")[0];
+        const alertClass = entry.checkout <= today ? "bg-yellow-100" : "";
 
-function deleteEntry(index) {
-  hostelData.splice(index, 1);
-  updateTable();
-}
+        let row = `<tr class="border-t ${alertClass}">
+          <td class="p-2">${entry.studentId}</td>
+          <td class="p-2">${entry.room}</td>
+          <td class="p-2">${entry.checkin}</td>
+          <td class="p-2">${entry.checkout}</td>`;
+        if (role === "faculty" || role === "student") {
+          row += `<td class="p-2">
+            <button onclick="editEntry(${index})" class="text-blue-600">Edit</button>
+            <button onclick="deleteEntry(${index})" class="text-red-600 ml-2">Delete</button>
+          </td>`;
+        }
+        row += `</tr>`;
+        tableBody.innerHTML += row;
+      });
+      localStorage.setItem("hostelData", JSON.stringify(hostelData));
+      renderChart();
+    }
 
-function exportToCSV() {
-  const headers = ["Student ID", "Hostel Room", "Check-in Date", "Check-out Date"];
-  const rows = hostelData.map(d => [d.studentId, d.room, d.checkin, d.checkout]);
-  const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "hostel_data.csv";
-  link.click();
-}
+    document.getElementById("hostel-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const studentId = document.getElementById("student-id").value.trim();
+      let room = document.getElementById("hostel-room").value || autoAssignRoom();
+      const checkin = document.getElementById("check-in-date").value;
+      const checkout = document.getElementById("check-out-date").value;
 
-function exportToPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(18);
-  doc.text("Hostel Records", 14, 22);
-  doc.setFontSize(12);
-  let y = 32;
-  hostelData.forEach((e, i) => {
-    doc.text(`${i + 1}. ${e.studentId} | ${e.room} | ${e.checkin} → ${e.checkout}`, 14, y);
-    y += 8;
-  });
-  doc.save("hostel_data.pdf");
-}
+      if (hostelData.some(e => e.studentId === studentId)) {
+        alert("Duplicate student ID not allowed.");
+        return;
+      }
 
-updateTable();
-</script>
+      hostelData.push({ studentId, room, checkin, checkout });
+      updateTable();
+      this.reset();
+    });
+
+    function editEntry(index) {
+      const entry = hostelData[index];
+      document.getElementById("student-id").value = entry.studentId;
+      document.getElementById("hostel-room").value = entry.room;
+      document.getElementById("check-in-date").value = entry.checkin;
+      document.getElementById("check-out-date").value = entry.checkout;
+      hostelData.splice(index, 1);
+      updateTable();
+    }
+
+    function deleteEntry(index) {
+      if (confirm("Are you sure you want to delete this entry?")) {
+        hostelData.splice(index, 1);
+        updateTable();
+      }
+    }
+
+    function exportToCSV() {
+      const headers = ["Student ID", "Hostel Room", "Check-in", "Check-out"];
+      const rows = hostelData.map(d => [d.studentId, d.room, d.checkin, d.checkout]);
+      const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "hostel_data.csv";
+      link.click();
+    }
+
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.text("Hostel Records", 14, 22);
+      doc.setFontSize(12);
+      let y = 32;
+      hostelData.forEach((e, i) => {
+        doc.text(`${i + 1}. ${e.studentId} | ${e.room} | ${e.checkin} → ${e.checkout}`, 14, y);
+        y += 8;
+      });
+      doc.save("hostel_data.pdf");
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById("hostel-chart").getContext("2d");
+      const monthMap = {};
+      hostelData.forEach(e => {
+        const month = new Date(e.checkin).toLocaleString('default', { month: 'short', year: 'numeric' });
+        monthMap[month] = (monthMap[month] || 0) + 1;
+      });
+      const chartData = {
+        labels: Object.keys(monthMap),
+        datasets: [{
+          label: 'Monthly Check-ins',
+          data: Object.values(monthMap),
+          backgroundColor: 'rgba(54, 162, 235, 0.6)'
+        }]
+      };
+      new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+
+    document.getElementById("search-bar").addEventListener("input", function () {
+      const searchVal = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#hostel-body tr");
+      rows.forEach(row => {
+        const match = row.innerText.toLowerCase().includes(searchVal);
+        row.style.display = match ? "" : "none";
+      });
+    });
+
+    document.getElementById("import-csv").addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const lines = event.target.result.split("\n").slice(1);
+        lines.forEach(line => {
+          const [studentId, room, checkin, checkout] = line.split(",");
+          if (studentId && room && checkin && checkout) {
+            hostelData.push({ studentId, room, checkin, checkout });
+          }
+        });
+        updateTable();
+      };
+      reader.readAsText(file);
+    });
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("bg-gray-100");
+      document.body.classList.toggle("bg-gray-900");
+    }
+
+    updateTable();
+  </script>
 </body>
+
 </html>
