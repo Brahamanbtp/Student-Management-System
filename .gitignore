@@ -1,0 +1,96 @@
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+.pnp
+.pnp.*
+
+# ==========================================
+# Next.js & Frontend Build Outputs
+# ==========================================
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+.swc/
+.vercel/
+.turbo/
+
+# ==========================================
+# Environment Variables
+# ==========================================
+.env
+.env.*
+!.env.example
+!.env.template
+
+# ==========================================
+# Logs & Debug
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# ==========================================
+# Testing & Coverage
+# ==========================================
+coverage/
+.nyc_output/
+.playwright/
+cypress/videos/
+cypress/screenshots/
+
+# ==========================================
+# Operating System & Temporary Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*~
+*.swp
+*.swo
+
+# ==========================================
+# IDEs & Editor Configs
+# ==========================================
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+
+# ==========================================
+# Security / Certificates
+# ==========================================
+*.pem
+*.key
+*.cert
+*.crt
+*.pkcs12
+
+# ==========================================
+# Uploads & Runtime Data
+# ==========================================
+server/uploads/
+server/temp/
+*.sqlite
+*.sqlite3
