@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Login | Student Management System</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="assets/js/core.js" defer></script>
   <style>
     /* Existing CSS remains unchanged - your animations and styles */
     * {
@@ -245,20 +246,20 @@ section .girl {
   <section>
     <div class="leaves">
       <div class="set">
-        <div><img src="/images/leaf_01.png" /></div>
-        <div><img src="/images/leaf_02.png" /></div>
-        <div><img src="/images/leaf_03.png" /></div>
-        <div><img src="/images/leaf_04.png" /></div>
-        <div><img src="/images/leaf_01.png" /></div>
-        <div><img src="/images/leaf_02.png" /></div>
-        <div><img src="/images/leaf_03.png" /></div>
-        <div><img src="/images/leaf_04.png" /></div>
+        <div><img src="images/leaf_01.png" /></div>
+        <div><img src="images/leaf_02.png" /></div>
+        <div><img src="images/leaf_03.png" /></div>
+        <div><img src="images/leaf_04.png" /></div>
+        <div><img src="images/leaf_01.png" /></div>
+        <div><img src="images/leaf_02.png" /></div>
+        <div><img src="images/leaf_03.png" /></div>
+        <div><img src="images/leaf_04.png" /></div>
       </div>
     </div>
 
-    <img src="/images/bg.jpg" class="bg" />
-    <img src="/images/girl.png" class="girl" />
-    <img src="/images/trees.png" class="trees" />
+    <img src="images/bg.jpg" class="bg" />
+    <img src="images/girl.png" class="girl" />
+    <img src="images/trees.png" class="trees" />
 
     <div class="login">
       <h2 id="loginTitle">Sign In</h2>
@@ -273,13 +274,13 @@ section .girl {
       </div>
       <div class="group">
         <a href="#">Forget Password</a>
-        <a href="./Signup.html">Signup</a>
+        <a href="./signup.html">Signup</a>
       </div>
     </div>
   </section>
 
   <script>
-  document.getElementById("btn").addEventListener("click", function () {
+  document.getElementById("btn").addEventListener("click", async function () {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
 
@@ -288,29 +289,26 @@ section .girl {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || {};
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password })
+      });
 
-    if (!users[username]) {
-      alert("Invalid username or password.");
-      return;
+      // ✅ Success: User is valid
+      alert(`Welcome back, ${data.user.fullName}!`);
+
+      // ✅ Store login session info
+      localStorage.setItem("loggedInUser", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("authenticated", "true");
+      localStorage.setItem("userRole", data.user.role);
+
+      // ✅ Redirect to dashboard
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      alert(err.message);
     }
-
-    if (users[username].password !== password) {
-      alert("Invalid username or password.");
-      return;
-    }
-
-    // ✅ Success: User is valid
-    const loggedInUser = users[username];
-    alert(`Welcome back, ${loggedInUser.fullName}!`);
-
-    // ✅ Store login session info
-    localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
-    localStorage.setItem("authenticated", "true");
-    localStorage.setItem("userRole", loggedInUser.role); // Make sure this exists in registration
-
-    // ✅ Redirect to dashboard
-    window.location.href = "dashboard.html";
   });
 </script>
 

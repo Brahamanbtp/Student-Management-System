@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signup - Glassmorphism Style</title>
+  <script src="assets/js/core.js" defer></script>
   <style>
     * {
   margin: 0;
@@ -243,19 +244,19 @@ section .girl {
   <section>
     <div class="leaves">
       <div class="set">
-        <div><img src="/images/leaf_01.png" /></div>
-        <div><img src="/images/leaf_02.png" /></div>
-        <div><img src="/images/leaf_03.png" /></div>
-        <div><img src="/images/leaf_04.png" /></div>
-        <div><img src="/images/leaf_01.png" /></div>
-        <div><img src="/images/leaf_02.png" /></div>
-        <div><img src="/images/leaf_03.png" /></div>
-        <div><img src="/images/leaf_04.png" /></div>
+        <div><img src="images/leaf_01.png" /></div>
+        <div><img src="images/leaf_02.png" /></div>
+        <div><img src="images/leaf_03.png" /></div>
+        <div><img src="images/leaf_04.png" /></div>
+        <div><img src="images/leaf_01.png" /></div>
+        <div><img src="images/leaf_02.png" /></div>
+        <div><img src="images/leaf_03.png" /></div>
+        <div><img src="images/leaf_04.png" /></div>
       </div>
     </div>
-    <img src="/images/bg.jpg" class="bg" />
-    <img src="/images/girl.png" class="girl" />
-    <img src="/images/trees.png" class="trees" />
+    <img src="images/bg.jpg" class="bg" />
+    <img src="images/girl.png" class="girl" />
+    <img src="images/trees.png" class="trees" />
 
     <div class="login">
       <h2>Sign Up</h2>
@@ -288,13 +289,13 @@ section .girl {
         <input type="submit" value="Create Account" id="signupBtn" />
       </div>
       <div class="group">
-        <a href="Login.html">Already have an account? Login</a>
+        <a href="login.html">Already have an account? Login</a>
       </div>
     </div>
   </section>
 
   <script>
-  document.getElementById("signupBtn").addEventListener("click", function () {
+  document.getElementById("signupBtn").addEventListener("click", async function () {
     const fullName = document.getElementById("fullname").value.trim();
     const email = document.getElementById("email").value.trim();
     const username = document.getElementById("username").value.trim();
@@ -307,37 +308,22 @@ section .girl {
       return;
     }
 
-    const emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
-    if (!emailPattern.test(email)) {
-      alert("Please enter a valid email address.");
-      return;
-    }
-
     if (password !== confirmPassword) {
       alert("Passwords do not match.");
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || {};
-    if (users[username]) {
-      alert("Username already exists. Choose a different one.");
-      return;
+    try {
+      const data = await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ fullName, email, username, password, role })
+      });
+
+      alert("Signup successful! You can now log in.");
+      window.location.href = "login.html";
+    } catch (err) {
+      alert(err.message);
     }
-
-    const timestamp = new Date().toISOString();
-
-    // ✅ Save user with role
-    users[username] = {
-      fullName,
-      email,
-      password,
-      role,
-      signupTime: timestamp
-    };
-
-    localStorage.setItem("users", JSON.stringify(users));
-    alert("Signup successful! You can now log in.");
-    window.location.href = "Login.html"; // Make sure the filename matches
   });
 </script>
 

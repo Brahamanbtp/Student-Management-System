@@ -10,8 +10,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="assets/js/core.js" defer></script>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
+  <nav id="main-nav"></nav>
 
   <div class="max-w-6xl mx-auto p-6 space-y-6">
     <h1 class="text-3xl font-bold text-center">Admission Section</h1>
@@ -69,11 +71,14 @@
   </div>
 
   <script>
-    const role = localStorage.getItem("role") || "student";
-    const user = { username: "student1" }; // Replace with actual logged-in user
-    let admissions = JSON.parse(localStorage.getItem("admissions") || "[]");
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    const role = loggedInUser?.role || "student";
+    const user = { username: loggedInUser?.username || "guest" };
+    
+    let admissions = [];
     let currentPage = 1, pageSize = 5;
-    let editingIndex = null;
+    let editingId = null;
+    
     const tableBody = document.getElementById("tableBody");
     const pagination = document.getElementById("pagination");
     const searchInput = document.getElementById("searchInput");
@@ -82,6 +87,15 @@
     const barChartCtx = document.getElementById("barChart");
 
     let pieChart, barChart;
+
+    async function loadAdmissions() {
+      try {
+        admissions = await apiFetch('/admissions');
+        renderTable();
+      } catch (err) {
+        console.error("Failed to load admissions:", err);
+      }
+    }
 
     function getFilteredAdmissions() {
       return admissions.filter(r => {
@@ -98,20 +112,19 @@
       tableBody.innerHTML = "";
 
       paginated.forEach((record, index) => {
-        const globalIndex = admissions.indexOf(record);
         tableBody.innerHTML += `
           <tr>
             <td class="px-4 py-2">${start + index + 1}</td>
             <td class="px-4 py-2">${record.name}</td>
             <td class="px-4 py-2">${record.type}</td>
             <td class="px-4 py-2 space-x-2">
-              <button onclick="viewDetails(${globalIndex})" class="text-indigo-600 hover:underline">View</button>
+              <button onclick="viewDetails('${record._id}')" class="text-indigo-600 hover:underline">View</button>
               ${
                 role === "faculty"
-                  ? `<button onclick="editRecord(${globalIndex})" class="text-blue-600 hover:underline">Edit</button>
-                     <button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>`
+                  ? `<button onclick="editRecord('${record._id}')" class="text-blue-600 hover:underline">Edit</button>
+                     <button onclick="deleteRecord('${record._id}')" class="text-red-600 hover:underline">Delete</button>`
                   : (role === "student" && record.submittedBy === user.username
-                      ? `<button onclick="deleteRecord(${globalIndex})" class="text-red-600 hover:underline">Delete</button>`
+                      ? `<button onclick="deleteRecord('${record._id}')" class="text-red-600 hover:underline">Delete</button>`
                       : `<span class="text-gray-400">View Only</span>`)
               }
             </td>
@@ -141,31 +154,36 @@
     }
 
     function addAdmission() {
-      editingIndex = null;
+      editingId = null;
+      document.getElementById("nameInput").value = "";
+      document.getElementById("typeInput").value = "online";
       openModal("Add New Admission");
     }
 
-    function viewDetails(index) {
-      editingIndex = null;
-      const record = admissions[index];
+    function viewDetails(id) {
+      editingId = null;
+      const record = admissions.find(r => r._id === id);
       document.getElementById("nameInput").value = record.name;
       document.getElementById("typeInput").value = record.type;
       openModal("Admission Details", true);
     }
 
-    function editRecord(index) {
-      editingIndex = index;
-      const record = admissions[index];
+    function editRecord(id) {
+      editingId = id;
+      const record = admissions.find(r => r._id === id);
       document.getElementById("nameInput").value = record.name;
       document.getElementById("typeInput").value = record.type;
       openModal("Edit Admission");
     }
 
-    function deleteRecord(index) {
+    async function deleteRecord(id) {
       if (confirm("Delete this record?")) {
-        admissions.splice(index, 1);
-        localStorage.setItem("admissions", JSON.stringify(admissions));
-        renderTable();
+        try {
+          await apiFetch(`/admissions/${id}`, { method: 'DELETE' });
+          loadAdmissions();
+        } catch (err) {
+          alert(err.message);
+        }
       }
     }
 
@@ -181,30 +199,34 @@
       document.getElementById("modal").classList.add("hidden");
     }
 
-    function saveModal() {
+    async function saveModal() {
       const name = document.getElementById("nameInput").value.trim();
       const type = document.getElementById("typeInput").value;
       if (!name) return alert("Name is required.");
 
-      if (editingIndex !== null) {
-        admissions[editingIndex] = { name, type, submittedBy: user.username };
-      } else {
-        admissions.push({ name, type, submittedBy: user.username });
+      try {
+        if (editingId) {
+          // Edit logic (if we add PUT route, for now let's just do POST as demo)
+          // await apiFetch(`/admissions/${editingId}`, { method: 'PUT', body: JSON.stringify({ name, type }) });
+          alert("Update functionality coming soon (requires PUT route)");
+        } else {
+          await apiFetch('/admissions', {
+            method: 'POST',
+            body: JSON.stringify({ name, type, submittedBy: user.username })
+          });
+        }
+        closeModal();
+        loadAdmissions();
+      } catch (err) {
+        alert(err.message);
       }
-
-      localStorage.setItem("admissions", JSON.stringify(admissions));
-      closeModal();
-      renderTable();
     }
 
     function renderCharts() {
       chartsSection.classList.remove("hidden");
-
       const data = applySearchFilter(getFilteredAdmissions());
       const typeCounts = { online: 0, offline: 0 };
-      data.forEach(r => {
-        typeCounts[r.type] = (typeCounts[r.type] || 0) + 1;
-      });
+      data.forEach(r => { typeCounts[r.type] = (typeCounts[r.type] || 0) + 1; });
 
       if (pieChart) pieChart.destroy();
       if (barChart) barChart.destroy();
@@ -213,10 +235,7 @@
         type: 'pie',
         data: {
           labels: ['Online', 'Offline'],
-          datasets: [{
-            data: [typeCounts.online, typeCounts.offline],
-            backgroundColor: ['#4F46E5', '#22C55E']
-          }]
+          datasets: [{ data: [typeCounts.online, typeCounts.offline], backgroundColor: ['#4F46E5', '#22C55E'] }]
         }
       });
 
@@ -224,11 +243,7 @@
         type: 'bar',
         data: {
           labels: ['Online', 'Offline'],
-          datasets: [{
-            label: '# of Admissions',
-            data: [typeCounts.online, typeCounts.offline],
-            backgroundColor: ['#4F46E5', '#22C55E']
-          }]
+          datasets: [{ label: '# of Admissions', data: [typeCounts.online, typeCounts.offline], backgroundColor: ['#4F46E5', '#22C55E'] }]
         }
       });
     }
@@ -246,21 +261,14 @@
       const doc = new jsPDF();
       doc.text("Admission Records", 14, 16);
       const data = applySearchFilter(getFilteredAdmissions()).map((r, i) => [i + 1, r.name, r.type]);
-      doc.autoTable({
-        head: [["#", "Name", "Type"]],
-        body: data,
-        startY: 20
-      });
+      doc.autoTable({ head: [["#", "Name", "Type"]], body: data, startY: 20 });
       doc.save("admissions.pdf");
     }
 
-    searchInput.addEventListener("input", function () {
-      currentPage = 1;
-      renderTable();
-    });
+    searchInput.addEventListener("input", () => { currentPage = 1; renderTable(); });
 
-    // Initial render
-    renderTable();
+    // Initial load
+    loadAdmissions();
   </script>
 </body>
 </html>

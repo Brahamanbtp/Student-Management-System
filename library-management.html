@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Library Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="assets/js/core.js" defer></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+  <nav id="main-nav"></nav>
+  <div class="max-w-4xl mx-auto p-6 dark:text-white">
+    <h1 class="text-3xl font-bold mb-6">Library Management</h1>
+    
+    <div class="bg-white p-6 rounded-lg shadow dark:bg-gray-800 mb-8">
+      <h2 class="text-xl font-bold mb-4">Add Book</h2>
+      <form id="book-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="text" id="bookTitle" placeholder="Book Title" class="p-2 border rounded dark:bg-gray-700" required>
+        <input type="text" id="author" placeholder="Author" class="p-2 border rounded dark:bg-gray-700" required>
+        <input type="text" id="isbn" placeholder="ISBN" class="p-2 border rounded dark:bg-gray-700" required>
+        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded md:col-span-3">Add to Inventory</button>
+      </form>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white dark:bg-gray-800 border rounded-lg">
+        <thead>
+          <tr class="bg-gray-100 dark:bg-gray-700">
+            <th class="px-4 py-2 text-left">Title</th>
+            <th class="px-4 py-2 text-left">Author</th>
+            <th class="px-4 py-2 text-left">Status</th>
+            <th class="px-4 py-2 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody id="book-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const bookForm = document.getElementById('book-form');
+    const bookList = document.getElementById('book-list');
+
+    async function loadBooks() {
+      try {
+        const books = await apiFetch('/library');
+        bookList.innerHTML = books.map(book => `
+          <tr class="border-b dark:border-gray-700">
+            <td class="px-4 py-2 font-bold">${book.bookTitle}</td>
+            <td class="px-4 py-2">${book.author}</td>
+            <td class="px-4 py-2">
+              <span class="px-2 py-1 text-xs rounded ${book.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                ${book.status}
+              </span>
+            </td>
+            <td class="px-4 py-2">
+              <button onclick="deleteBook('${book._id}')" class="text-red-500">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    bookForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const bookTitle = document.getElementById('bookTitle').value;
+      const author = document.getElementById('author').value;
+      const isbn = document.getElementById('isbn').value;
+      
+      try {
+        await apiFetch('/library', {
+          method: 'POST',
+          body: JSON.stringify({ bookTitle, author, isbn, status: 'available' })
+        });
+        bookForm.reset();
+        loadBooks();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteBook(id) {
+      if (confirm('Delete?')) {
+        await apiFetch(`/library/${id}`, { method: 'DELETE' });
+        loadBooks();
+      }
+    }
+
+    loadBooks();
+  </script>
+</body>
+</html>

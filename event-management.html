@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Event Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="assets/js/core.js" defer></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+  <nav id="main-nav"></nav>
+  <div class="max-w-4xl mx-auto p-6 dark:text-white">
+    <h1 class="text-3xl font-bold mb-6">Event Management</h1>
+    
+    <div class="bg-white p-6 rounded-lg shadow dark:bg-gray-800 mb-8">
+      <h2 class="text-xl font-bold mb-4">Schedule New Event</h2>
+      <form id="event-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" id="title" placeholder="Event Title" class="p-2 border rounded dark:bg-gray-700" required>
+        <input type="date" id="date" class="p-2 border rounded dark:bg-gray-700" required>
+        <input type="text" id="location" placeholder="Location" class="p-2 border rounded dark:bg-gray-700" required>
+        <textarea id="description" placeholder="Description" class="p-2 border rounded dark:bg-gray-700 md:col-span-2"></textarea>
+        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded md:col-span-2">Create Event</button>
+      </form>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="event-list"></div>
+  </div>
+
+  <script>
+    const eventForm = document.getElementById('event-form');
+    const eventList = document.getElementById('event-list');
+
+    async function loadEvents() {
+      try {
+        const events = await apiFetch('/events');
+        eventList.innerHTML = events.map(event => `
+          <div class="bg-white p-4 rounded-lg shadow dark:bg-gray-800 border-l-4 border-indigo-500">
+            <h3 class="font-bold text-lg">${event.title}</h3>
+            <p class="text-sm text-gray-500">${new Date(event.date).toLocaleDateString()} @ ${event.location}</p>
+            <p class="mt-2 text-gray-700 dark:text-gray-300">${event.description}</p>
+            <button onclick="deleteEvent('${event._id}')" class="mt-4 text-red-500 text-sm hover:underline">Cancel Event</button>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    eventForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const date = document.getElementById('date').value;
+      const location = document.getElementById('location').value;
+      const description = document.getElementById('description').value;
+      
+      try {
+        await apiFetch('/events', {
+          method: 'POST',
+          body: JSON.stringify({ title, date, location, description })
+        });
+        eventForm.reset();
+        loadEvents();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteEvent(id) {
+      if (confirm('Delete?')) {
+        await apiFetch(`/events/${id}`, { method: 'DELETE' });
+        loadEvents();
+      }
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>

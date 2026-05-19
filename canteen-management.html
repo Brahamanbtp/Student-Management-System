@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Canteen Management | SMS PRO IoT</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="assets/js/core.js" defer></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+  <nav id="main-nav"></nav>
+  <div class="max-w-4xl mx-auto p-6 dark:text-white">
+    <header class="mb-12">
+        <h1 class="text-4xl font-black tracking-tighter">Canteen <span class="text-indigo-600">POS Hub</span></h1>
+        <p class="text-gray-500 font-medium uppercase text-[10px] tracking-widest mt-1">IoT Bridge Connected: Terminal POS-CANTEEN-01</p>
+    </header>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- POS Transaction Section -->
+      <div class="bg-white p-8 rounded-[2rem] shadow-xl dark:bg-gray-800 border border-transparent hover:border-indigo-500/20 transition-all">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            Live POS Transaction
+        </h2>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Terminal Charge ($)</label>
+                <input type="number" id="amountInput" value="12.00" class="w-full p-4 bg-gray-100 dark:bg-gray-700 rounded-2xl font-black text-2xl border-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="p-6 bg-indigo-600/5 border border-indigo-500/10 rounded-2xl">
+                <p class="text-center text-[10px] font-black uppercase text-indigo-400 mb-4">Awaiting Student ID Scan...</p>
+                <button onclick="simulateScan('student123')" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-lg shadow-indigo-600/20">
+                    Simulate Scan
+                </button>
+            </div>
+        </div>
+      </div>
+
+      <!-- Menu Management -->
+      <div class="bg-white p-8 rounded-[2rem] shadow-xl dark:bg-gray-800 border border-transparent hover:border-emerald-500/20 transition-all">
+        <h2 class="text-xl font-bold mb-6">Add Inventory</h2>
+        <form id="menu-form" class="space-y-4">
+          <input type="text" id="itemName" placeholder="Item Name" class="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-none" required>
+          <input type="number" id="price" placeholder="Price" class="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-none" required>
+          <select id="category" class="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-xl border-none">
+            <option value="Snack">Snack</option>
+            <option value="Meal">Meal</option>
+            <option value="Drink">Drink</option>
+          </select>
+          <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest">Add to Menu</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="mt-12 bg-white dark:bg-gray-800 p-8 rounded-[2rem] shadow-xl">
+        <h2 class="text-xl font-bold mb-6">Current Inventory</h2>
+        <div id="menu-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    const menuForm = document.getElementById('menu-form');
+    const menuList = document.getElementById('menu-list');
+
+    socket.on('connect', () => {
+        console.log("POS Terminal Online: Secure IoT Bridge Established.");
+    });
+
+    socket.on('DEVICE_COMMAND', (data) => {
+        const { cmd, payload } = data;
+        if (cmd === 'PAYMENT_SUCCESS') {
+            alert(`SUCCESS: Payment Verified.\nRemaining Balance: $${payload.remaining.toFixed(2)}`);
+        } else if (cmd === 'PAYMENT_FAILED') {
+            alert(`FAILED: ${payload.reason}`);
+        }
+    });
+
+    function simulateScan(studentId) {
+        const amount = parseFloat(document.getElementById('amountInput').value) || 12.00;
+        socket.emit('IOT_CANTEEN_POS', {
+            studentId,
+            amount,
+            terminalId: 'POS-CANTEEN-01'
+        });
+    }
+
+    async function loadMenu() {
+      try {
+        const items = await apiFetch('/canteen');
+        menuList.innerHTML = items.map(item => `
+          <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-2xl">
+            <div>
+              <p class="font-black text-sm">${item.itemName}</p>
+              <p class="text-[10px] text-gray-500 font-bold uppercase">$${item.price} • ${item.category}</p>
+            </div>
+            <button onclick="deleteItem('${item._id}')" class="text-rose-500 font-black text-[10px] uppercase">Remove</button>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    menuForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const itemName = document.getElementById('itemName').value;
+      const price = document.getElementById('price').value;
+      const category = document.getElementById('category').value;
+      
+      try {
+        await apiFetch('/canteen', {
+          method: 'POST',
+          body: JSON.stringify({ itemName, price, category, availability: true })
+        });
+        menuForm.reset();
+        loadMenu();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteItem(id) {
+      if (confirm('Delete?')) {
+        await apiFetch(`/canteen/${id}`, { method: 'DELETE' });
+        loadMenu();
+      }
+    }
+
+    loadMenu();
+  </script>
+</body>
+</html>

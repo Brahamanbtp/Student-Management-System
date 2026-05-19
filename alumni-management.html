@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alumni Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+  <script src="assets/js/core.js" defer></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
+  <nav id="main-nav"></nav>
+  <div class="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-6 dark:bg-gray-800">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Alumni Management</h2>
+    <form id="alumni-form" class="space-y-4">
+      <div>
+        <label for="alumni-name" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Name</label>
+        <input type="text" id="alumni-name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700" />
+      </div>
+      <div>
+        <label for="alumni-batch" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Batch</label>
+        <input type="text" id="alumni-batch" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700" />
+      </div>
+      <div>
+        <label for="alumni-email" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
+        <input type="email" id="alumni-email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700" />
+      </div>
+      <div>
+        <label for="alumni-company" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Current Company</label>
+        <input type="text" id="alumni-company" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700" />
+      </div>
+      <div>
+        <label for="alumni-photo" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Profile Picture (URL)</label>
+        <input type="url" id="alumni-photo" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700" />
+      </div>
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Add Alumni</button>
+    </form>
+
+    <div class="mt-8">
+      <input type="text" id="search-input" placeholder="Search..." class="w-full p-2 border border-gray-300 rounded mb-4 dark:bg-gray-700" />
+      <div class="overflow-x-auto">
+        <table id="alumni-table" class="min-w-full bg-white border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700">
+          <thead>
+            <tr class="bg-gray-100 dark:bg-gray-700">
+              <th class="px-4 py-2 text-left">#</th>
+              <th class="px-4 py-2 text-left">Photo</th>
+              <th class="px-4 py-2 text-left">Name</th>
+              <th class="px-4 py-2 text-left">Batch</th>
+              <th class="px-4 py-2 text-left">Email</th>
+              <th class="px-4 py-2 text-left">Company</th>
+              <th class="px-4 py-2 text-left">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-600"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    const user = { username: loggedInUser?.username || "guest" };
+
+    const form = document.getElementById("alumni-form");
+    const tableBody = document.querySelector("#alumni-table tbody");
+    const searchInput = document.getElementById("search-input");
+    let alumni = [];
+    let currentPage = 1;
+    const pageSize = 5;
+
+    async function loadAlumni() {
+        try {
+            alumni = await apiFetch('/alumni');
+            renderTable();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const name = document.getElementById("alumni-name").value.trim();
+      const batch = document.getElementById("alumni-batch").value.trim();
+      const email = document.getElementById("alumni-email").value.trim();
+      const company = document.getElementById("alumni-company").value.trim();
+      const photo = document.getElementById("alumni-photo").value.trim();
+      if (!name || !batch || !email) return alert("Please fill required fields.");
+
+      try {
+          await apiFetch('/alumni', {
+              method: 'POST',
+              body: JSON.stringify({ name, batch, email, company, photo, submittedBy: user.username })
+          });
+          form.reset();
+          loadAlumni();
+      } catch (err) {
+          alert(err.message);
+      }
+    });
+
+    function renderTable() {
+      const start = (currentPage - 1) * pageSize;
+      const paginatedData = alumni.slice(start, start + pageSize);
+      tableBody.innerHTML = "";
+      paginatedData.forEach((record, index) => {
+        const row = `<tr>
+          <td class="px-4 py-2">${start + index + 1}</td>
+          <td class="px-4 py-2"><img src="${record.photo || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full" alt="profile"></td>
+          <td class="px-4 py-2">${record.name}</td>
+          <td class="px-4 py-2">${record.batch}</td>
+          <td class="px-4 py-2">${record.email}</td>
+          <td class="px-4 py-2">${record.company || ''}</td>
+          <td class="px-4 py-2 space-x-2">
+            <button onclick="deleteRecord('${record._id}')" class="text-red-600 hover:underline">Delete</button>
+          </td>
+        </tr>`;
+        tableBody.insertAdjacentHTML("beforeend", row);
+      });
+    }
+
+    async function deleteRecord(id) {
+      if (confirm("Are you sure?")) {
+        try {
+            await apiFetch(`/alumni/${id}`, { method: 'DELETE' });
+            loadAlumni();
+        } catch (err) {
+            alert(err.message);
+        }
+      }
+    }
+
+    loadAlumni();
+  </script>
+</body>
+</html>

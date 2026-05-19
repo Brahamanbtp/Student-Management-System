@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Transportation Management</title>
+  <title>Time Table Management</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -28,61 +28,69 @@
       margin-top: 10px;
     }
   </style>
+  <script src="assets/js/core.js" defer></script>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
+  <nav id="main-nav"></nav>
   <div class="container">
-    <h2 class="text-center mb-4">Transportation Management</h2>
+    <h2 class="text-center mb-4">Time Table Management</h2>
 
     <div class="position-relative" id="form-wrapper">
-      <form id="transport-form" class="bg-white p-4 rounded shadow-sm border">
+      <form id="time-table-form" class="bg-white p-4 rounded shadow-sm border">
         <div class="row g-3">
-          <div class="col-md-4">
-            <label for="student-id-transport" class="form-label">Student ID</label>
-            <input type="text" class="form-control" id="student-id-transport" required>
+          <div class="col-md-6">
+            <label for="day" class="form-label">Day</label>
+            <input type="text" class="form-control" id="day" placeholder="e.g., Monday" required>
           </div>
-          <div class="col-md-4">
-            <label for="route" class="form-label">Route</label>
-            <input type="text" class="form-control" id="route" required>
+          <div class="col-md-6">
+            <label for="time" class="form-label">Time</label>
+            <input type="text" class="form-control" id="time" placeholder="e.g., 10:00 - 11:00 AM" required>
           </div>
-          <div class="col-md-4">
-            <label for="vehicle-no" class="form-label">Vehicle No</label>
-            <input type="text" class="form-control" id="vehicle-no" required>
+          <div class="col-md-6">
+            <label for="subject" class="form-label">Subject</label>
+            <input type="text" class="form-control" id="subject" placeholder="e.g., Mathematics" required>
+          </div>
+          <div class="col-md-6">
+            <label for="faculty" class="form-label">Faculty</label>
+            <input type="text" class="form-control" id="faculty" placeholder="e.g., Mr. Sharma" required>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary mt-3">Assign Transport</button>
+        <button type="submit" class="btn btn-primary mt-3">Add Schedule</button>
         <div id="form-message" class="text-success message"></div>
       </form>
     </div>
 
     <div class="input-group my-4">
-      <input type="text" class="form-control" id="search-input" placeholder="Search by Student ID, Route, or Vehicle No">
+      <input type="text" class="form-control" id="search-input" placeholder="Search by Day, Subject, or Faculty">
       <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
     </div>
 
-    <table class="table table-bordered table-hover" id="transport-table">
+    <table class="table table-bordered table-hover" id="time-table-table">
       <thead class="table-dark">
         <tr>
-          <th onclick="sortTable(0)">Student ID</th>
-          <th onclick="sortTable(1)">Route</th>
-          <th onclick="sortTable(2)">Vehicle No</th>
+          <th onclick="sortTable(0)">Day</th>
+          <th onclick="sortTable(1)">Time</th>
+          <th onclick="sortTable(2)">Subject</th>
+          <th onclick="sortTable(3)">Faculty</th>
         </tr>
       </thead>
       <tbody>
-        <!-- Records will be added dynamically -->
+        <!-- Time table data here -->
       </tbody>
     </table>
   </div>
 
   <script>
-    const userRole = localStorage.getItem("userRole") || "student"; // Change this in your login system
-    const form = document.getElementById("transport-form");
+    // Simulated role from localStorage (admin, faculty, student)
+    const userRole = localStorage.getItem("userRole") || "student";
+    const form = document.getElementById("time-table-form");
     const formWrapper = document.getElementById("form-wrapper");
     const message = document.getElementById("form-message");
 
-    if (userRole !== "admin" && userRole !== "staff") {
+    if (userRole !== "admin" && userRole !== "faculty") {
       const overlay = document.createElement("div");
       overlay.className = "disabled-overlay";
-      overlay.innerText = "View-only access. Log in as admin/staff to assign transport.";
+      overlay.innerText = "View-only access. Log in as admin/faculty to manage time table.";
       formWrapper.appendChild(overlay);
       form.querySelectorAll("input, button").forEach(el => el.disabled = true);
     }
@@ -90,22 +98,23 @@
     form.addEventListener("submit", function (event) {
       event.preventDefault();
 
-      const studentId = document.getElementById("student-id-transport").value.trim();
-      const route = document.getElementById("route").value.trim();
-      const vehicleNo = document.getElementById("vehicle-no").value.trim();
+      const day = document.getElementById("day").value.trim();
+      const time = document.getElementById("time").value.trim();
+      const subject = document.getElementById("subject").value.trim();
+      const faculty = document.getElementById("faculty").value.trim();
 
       const newRow = document.createElement("tr");
-      newRow.innerHTML = `<td>${studentId}</td><td>${route}</td><td>${vehicleNo}</td>`;
-      document.querySelector("#transport-table tbody").appendChild(newRow);
+      newRow.innerHTML = `<td>${day}</td><td>${time}</td><td>${subject}</td><td>${faculty}</td>`;
+      document.querySelector("#time-table-table tbody").appendChild(newRow);
 
-      message.textContent = "Transport assigned successfully!";
+      message.textContent = "Schedule added successfully!";
       form.reset();
       setTimeout(() => { message.textContent = ""; }, 2000);
     });
 
     document.getElementById("search-input").addEventListener("input", function () {
       const value = this.value.toLowerCase();
-      document.querySelectorAll("#transport-table tbody tr").forEach(row => {
+      document.querySelectorAll("#time-table-table tbody tr").forEach(row => {
         row.style.display = [...row.cells].some(cell =>
           cell.textContent.toLowerCase().includes(value)
         ) ? "" : "none";
@@ -113,7 +122,7 @@
     });
 
     function sortTable(colIndex) {
-      const table = document.getElementById("transport-table");
+      const table = document.getElementById("time-table-table");
       let switching = true, dir = "asc", switchcount = 0;
       while (switching) {
         switching = false;
@@ -141,7 +150,7 @@
     }
 
     function exportToCSV() {
-      const rows = document.querySelectorAll("#transport-table tr");
+      const rows = document.querySelectorAll("#time-table-table tr");
       let csv = Array.from(rows).map(row =>
         Array.from(row.cells).map(cell => `"${cell.innerText}"`).join(",")
       ).join("\n");
@@ -150,7 +159,7 @@
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "transport_data.csv";
+      a.download = "time_table.csv";
       a.click();
     }
   </script>
